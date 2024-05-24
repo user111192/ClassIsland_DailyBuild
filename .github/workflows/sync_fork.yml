@@ -23,6 +23,7 @@ jobs:
           pr_title: "[Master] Fork Sync"
 
       - uses: tgymnich/fork-sync@v1.8
+        if: ${{ failure() }}
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           owner: HelloWRC
