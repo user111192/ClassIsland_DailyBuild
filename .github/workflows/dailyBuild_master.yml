@@ -1,0 +1,92 @@
+name: Master branch daily build
+
+on: 
+  schedule:
+    - cron: "0 17 * * *"
+  workflow_dispatch:
+
+
+jobs:
+
+  build:
+
+    runs-on: windows-latest  # For a list of available runner types, refer to
+    # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
+    
+    env:
+      Solution_Name: ClassIsland.sln                       # Replace with your solution name, i.e. MyWpfApp.sln.
+      # Test_Project_Path: your-test-project-path                 # Replace with the path to your test project, i.e. MyWpfApp.Tests\MyWpfApp.Tests.csproj.
+      Wap_Project_Directory: ClassIsland/ClassIsland    # Replace with the Wap project directory relative to the solution, i.e. MyWpfApp.Package.
+      Wap_Project_Path: ClassIsland/ClassIsland/ClassIsland.csproj                   # Replace with the path to your Wap project, i.e. MyWpf.App.Package\MyWpfApp.Package.wapproj.
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: master
+          
+      - name: Get application version
+        run: |
+          $env:app_ver = "DailyBuild_Master_${{ github.sha }}"
+          echo $env:app_ver
+      
+      - name: List files
+        run: ls
+      
+      # Install the .NET Core workload
+      - name: Install .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 6.0.x
+      
+      # Add  MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
+      - name: Setup MSBuild.exe
+        uses: microsoft/setup-msbuild@v1.0.2
+      
+      - name: Publish application
+        run: |
+          cd ./ClassIsland
+          ls
+          dotnet publish ./ClassIsland.csproj -p:PublishProfile=FolderProfile -c Release
+          
+      - name: Package application
+        run: |
+          cd .\ClassIsland\bin\Release\net6.0-windows\publish\win-x64\
+          7z a ClassIsland.zip ./ClassIsland.exe -mx=9
+
+      - name: Generate Package Hash
+        run: |
+          cd .\ClassIsland\bin\Release\net6.0-windows\publish\win-x64\
+          certutil -hashfile ./ClassIsland.zip MD5 | findstr /v "[^0-9a-z]" >> MD5CHECKSUM
+          
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: DailyBuild_Master_${{ github.sha }}
+          release_name: Master Release ${{ github.sha }}
+          draft: false
+          prerelease: true
+
+      - name: Upload ClassIsland.zip
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ClassIsland/bin/Release/net6.0-windows/publish/win-x64/ClassIsland.zip
+          asset_name: ClassIsland.zip
+          asset_content_type: application/zip
+
+      - name: Upload MD5CHECKSUM
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ClassIsland/bin/Release/net6.0-windows/publish/win-x64/MD5CHECKSUM
+          asset_name: MD5CHECKSUM
+          asset_content_type: application/text
