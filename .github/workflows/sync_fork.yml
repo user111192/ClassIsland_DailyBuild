@@ -1,0 +1,26 @@
+name: Sync Fork
+
+on:
+  schedule:
+    - cron: "0 16 * * *"
+  workflow_dispatch:
+
+jobs:
+  repo-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: tgymnich/fork-sync@v1.8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          owner: HelloWRC
+          repo: ClassIsland
+          head: master
+          base: master
+
+      - uses: tgymnich/fork-sync@v1.8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          owner: HelloWRC
+          repo: ClassIsland
+          head: dev
+          base: dev
