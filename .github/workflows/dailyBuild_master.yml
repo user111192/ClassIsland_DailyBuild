@@ -64,7 +64,7 @@ jobs:
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.BUILD_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: DailyBuild_Master_${{ github.sha }}
           release_name: Master Release ${{ github.sha }}
@@ -74,7 +74,7 @@ jobs:
       - name: Upload ClassIsland.zip
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.BUILD_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./ClassIsland/bin/Release/net6.0-windows/publish/win-x64/ClassIsland.zip
@@ -84,7 +84,7 @@ jobs:
       - name: Upload MD5CHECKSUM
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.BUILD_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./ClassIsland/bin/Release/net6.0-windows/publish/win-x64/MD5CHECKSUM
