@@ -16,6 +16,11 @@ jobs:
           repo: ClassIsland
           head: master
           base: master
+          retries: 2
+          retry_after: 5
+          auto_approve: true
+          auto_merge: true
+          pr_title: "[Master] Fork Sync"
 
       - uses: tgymnich/fork-sync@v1.8
         with:
@@ -24,3 +29,8 @@ jobs:
           repo: ClassIsland
           head: dev
           base: dev
+          retries: 2
+          retry_after: 5
+          auto_approve: true
+          auto_merge: true
+          pr_title: "[Dev] Fork Sync"
