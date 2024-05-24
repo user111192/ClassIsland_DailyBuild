@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: tgymnich/fork-sync@v1.8
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.BUILD_TOKEN }}
           owner: HelloWRC
           repo: ClassIsland
           head: master
@@ -19,7 +19,7 @@ jobs:
 
       - uses: tgymnich/fork-sync@v1.8
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.BUILD_TOKEN }}
           owner: HelloWRC
           repo: ClassIsland
           head: dev
