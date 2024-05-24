@@ -1,0 +1,90 @@
+name: Dev branch daily build
+
+on: 
+  schedule:
+    - cron: "30 17 * * *"
+  workflow_dispatch:
+    
+
+jobs:
+
+  build:
+
+    runs-on: windows-latest
+    
+    env:
+      Solution_Name: ClassIsland.sln
+      Wap_Project_Directory: ClassIsland/ClassIsland
+      Wap_Project_Path: ClassIsland/ClassIsland/ClassIsland.csproj
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: dev
+
+      - name: Get application version
+        run: |
+          $env:app_ver = "DailyBuild_Dev_${{ github.sha }}"
+          echo $env:app_ver
+      
+      - name: List files
+        run: ls
+      
+      # Install the .NET Core workload
+      - name: Install .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 6.0.x
+      
+      # Add  MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
+      - name: Setup MSBuild.exe
+        uses: microsoft/setup-msbuild@v1.0.2
+      
+      - name: Publish application
+        run: |
+          cd ./ClassIsland
+          ls
+          dotnet publish ./ClassIsland.csproj -p:PublishProfile=FolderProfile -c Release
+          
+      - name: Package application
+        run: |
+          cd .\ClassIsland\bin\Release\net6.0-windows\publish\win-x64\
+          7z a ClassIsland.zip ./ClassIsland.exe -mx=9
+
+      - name: Generate Package Hash
+        run: |
+          cd .\ClassIsland\bin\Release\net6.0-windows\publish\win-x64\
+          certutil -hashfile ./ClassIsland.zip MD5 | findstr /v "[^0-9a-z]" >> MD5CHECKSUM
+          
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: DailyBuild_Dev_${{ github.sha }}
+          release_name: Dev Release ${{ github.sha }}
+          draft: false
+          prerelease: true
+
+      - name: Upload ClassIsland.zip
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ClassIsland/bin/Release/net6.0-windows/publish/win-x64/ClassIsland.zip
+          asset_name: ClassIsland.zip
+          asset_content_type: application/zip
+
+      - name: Upload MD5CHECKSUM
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ClassIsland/bin/Release/net6.0-windows/publish/win-x64/MD5CHECKSUM
+          asset_name: MD5CHECKSUM
+          asset_content_type: application/text
