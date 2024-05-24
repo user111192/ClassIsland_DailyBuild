@@ -34,3 +34,15 @@ jobs:
           auto_approve: true
           auto_merge: true
           pr_title: "[Dev] Fork Sync"
+
+      - name: Echo Error
+        if: ${{ failure() }}
+        run: |
+          echo "Fail to sync fork.May be there is no differences between the parent repository and this fork."
+          exit 0
+
+      - name: Echo Success
+        if: ${{ !failure() }}
+        run: |
+          echo "Success to sync fork."
+          exit 0
