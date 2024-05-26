@@ -1,40 +1,32 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Interop;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+
 using ClassIsland.Controls;
 using ClassIsland.Converters;
 using ClassIsland.Core.Models.Profile;
-using ClassIsland.Models;
 using ClassIsland.Services;
 using ClassIsland.Services.Management;
 using ClassIsland.ViewModels;
+
 using MaterialDesignThemes.Wpf;
+
 using Microsoft.AppCenter.Analytics;
+
 using Application = System.Windows.Application;
 using DataFormats = System.Windows.DataFormats;
 using DragDropEffects = System.Windows.DragDropEffects;
 using DragEventArgs = System.Windows.DragEventArgs;
-using ListBox = System.Windows.Controls.ListBox;
 using Path = System.IO.Path;
 using TabControl = System.Windows.Controls.TabControl;
 
@@ -533,17 +525,17 @@ public partial class ProfileSettingsWindow : MyWindow
     private void DataGridClassPlans_OnBeginningEdit(object? sender, DataGridBeginningEditEventArgs e)
     {
         ViewModel.IsClassPlansEditing = true;
-        var hWnd = new WindowInteropHelper(this).Handle;
-        NativeWindowHelper.SetWindowLong(hWnd, NativeWindowHelper.GWL_STYLE, 
-            NativeWindowHelper.GetWindowLong(hWnd, NativeWindowHelper.GWL_STYLE) & ~NativeWindowHelper.WS_SYSMENU);
+        var hWnd = (HWND)new WindowInteropHelper(this).Handle;
+        SetWindowLong(hWnd, WINDOW_LONG_PTR_INDEX.GWL_STYLE, 
+            GetWindowLong(hWnd, WINDOW_LONG_PTR_INDEX.GWL_STYLE) & ~NativeWindowHelper.WS_SYSMENU);
     }
 
     private void DataGridClassPlans_OnCellEditEnding(object? sender, DataGridCellEditEndingEventArgs e)
     {
         ViewModel.IsClassPlansEditing = false;
-        var hWnd = new WindowInteropHelper(this).Handle;
-        NativeWindowHelper.SetWindowLong(hWnd, NativeWindowHelper.GWL_STYLE,
-            NativeWindowHelper.GetWindowLong(hWnd, NativeWindowHelper.GWL_STYLE) | NativeWindowHelper.WS_SYSMENU);
+        var hWnd = (HWND)new WindowInteropHelper(this).Handle;
+        SetWindowLong(hWnd, WINDOW_LONG_PTR_INDEX.GWL_STYLE,
+            GetWindowLong(hWnd, WINDOW_LONG_PTR_INDEX.GWL_STYLE) | NativeWindowHelper.WS_SYSMENU);
     }
 
     private void ProfileSettingsWindow_OnClosing(object? sender, CancelEventArgs e)

@@ -5,21 +5,25 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Media;
-using System.Windows.Media.Converters;
+
 using ClassIsland.Core;
 using ClassIsland.Core.Abstraction.Models;
 using ClassIsland.Core.Enums;
-using ClassIsland.Core.Interfaces;
 using ClassIsland.Core.Models.Notification;
 using ClassIsland.Models.AllContributors;
 using ClassIsland.Models.Weather;
 using ClassIsland.Services;
+
 using CommunityToolkit.Mvvm.ComponentModel;
-using MaterialDesignColors;
+
 using Microsoft.Extensions.Logging;
+
 using Newtonsoft.Json;
+
 using Octokit;
+
 using WindowsShortcutFactory;
+
 using File = System.IO.File;
 
 namespace ClassIsland.Models;
@@ -139,6 +143,7 @@ public class Settings : ObservableRecipient, ILessonControlSettings, INotificati
     private bool _allowNotificationEffect = true;
     private bool _allowNotificationSound = false;
     private bool _allowNotificationTopmost = true;
+    private string _updateArtifactHash = "";
 
     public void NotifyPropertyChanged(string propertyName)
     {
@@ -1103,6 +1108,17 @@ public class Settings : ObservableRecipient, ILessonControlSettings, INotificati
         {
             if (Equals(value, _updateVersion)) return;
             _updateVersion = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string UpdateArtifactHash
+    {
+        get => _updateArtifactHash;
+        set
+        {
+            if (value == _updateArtifactHash) return;
+            _updateArtifactHash = value;
             OnPropertyChanged();
         }
     }

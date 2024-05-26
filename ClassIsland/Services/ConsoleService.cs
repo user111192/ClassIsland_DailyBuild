@@ -1,11 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.Windows;
-using System.Windows.Media;
-using ClassIsland.Core;
+
 using Pastel;
-using static ClassIsland.NativeWindowHelper;
-using Color = System.Drawing.Color;
 
 namespace ClassIsland.Services;
 
@@ -14,7 +11,7 @@ public class ConsoleService
     private static bool _consoleVisible;
 
     public static string AsciiLogo = "";
-    public static nint ConsoleHWnd { get; private set; }
+    public static HWND ConsoleHWnd { get; private set; }
 
     public static bool ConsoleVisible
     {
@@ -23,11 +20,11 @@ public class ConsoleService
         {
             if (value)
             {
-                ShowWindow(ConsoleHWnd, SW_SHOW);
+                ShowWindow(ConsoleHWnd, SHOW_WINDOW_CMD.SW_SHOW);
             }
             else
             {
-                ShowWindow(ConsoleHWnd, SW_HIDE);
+                ShowWindow(ConsoleHWnd, SHOW_WINDOW_CMD.SW_HIDE);
             }
             _consoleVisible = value;
         }
@@ -41,7 +38,7 @@ public class ConsoleService
         }
         ConsoleHWnd = GetConsoleWindow();
         SetWindowText(ConsoleHWnd, "ClassIsland 输出");
-        ShowWindow(ConsoleHWnd, SW_HIDE);
+        ShowWindow(ConsoleHWnd, SHOW_WINDOW_CMD.SW_HIDE);
         PrintAppInfo();
     }
 

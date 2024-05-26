@@ -5,11 +5,12 @@ using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Management;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+
 using ClassIsland.Services.Logging;
 using ClassIsland.Services.Management;
+
 using Microsoft.AppCenter.Analytics;
 using Microsoft.Extensions.Logging;
 
@@ -35,10 +36,11 @@ public class DiagnosticService(SettingsService settingsService, FileFolderServic
     public string GetDiagnosticInfo()
     {
         var settings = SettingsService.Settings;
+        DwmIsCompositionEnabled(out BOOL isCompositionEnabled);
         var list = new Dictionary<string, string>
         {
             {"SystemOsVersion",  RuntimeInformation.OSDescription},
-            {"SystemIsCompositionEnabled", NativeWindowHelper.DwmIsCompositionEnabled().ToString()},
+            {"SystemIsCompositionEnabled", isCompositionEnabled.ToString()},
             {"AppCurrentMemoryUsage", Process.GetCurrentProcess().PrivateMemorySize64.ToString("N")},
             {"AppStartupDurationMs", StartupDurationMs.ToString()},
             {"AppVersion", App.AppVersionLong},
