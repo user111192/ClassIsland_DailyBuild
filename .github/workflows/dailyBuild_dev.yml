@@ -18,6 +18,10 @@ jobs:
       Wap_Project_Path: ClassIsland/ClassIsland/ClassIsland.csproj
 
     steps:
+      - name: fix bugs
+        run: |
+          git config --system core.longpaths true
+          echo done
       - name: Checkout
         uses: actions/checkout@v3
         with:
