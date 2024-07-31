@@ -1,22 +1,17 @@
-﻿using ClassIsland.Controls;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using ClassIsland.Core.Models.Profile;
-using ClassIsland.Models;
+
+using ClassIsland.Controls;
+using ClassIsland.Core.Abstractions.Services;
+using ClassIsland.Core.Abstractions.Services.Management;
+using ClassIsland.Core.Controls;
+using ClassIsland.Shared.Models.Profile;
 using ClassIsland.Services;
 using ClassIsland.Services.Management;
 using ClassIsland.ViewModels;
+
 using MaterialDesignThemes.Wpf;
 
 namespace ClassIsland.Views;
@@ -28,9 +23,9 @@ public partial class ClassChangingWindow : MyWindow
 {
     public ClassChangingViewModel ViewModel { get; } = new();
 
-    public ProfileService ProfileService { get; } = App.GetService<ProfileService>();
+    public IProfileService ProfileService { get; } = App.GetService<IProfileService>();
 
-    public ManagementService ManagementService { get; } = App.GetService<ManagementService>();
+    public IManagementService ManagementService { get; } = App.GetService<IManagementService>();
 
     public static readonly DependencyProperty ClassPlanProperty = DependencyProperty.Register(
         nameof(ClassPlan), typeof(ClassPlan), typeof(ClassChangingWindow), new PropertyMetadata(default(ClassPlan)));

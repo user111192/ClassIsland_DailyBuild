@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.CommandLine;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -10,16 +8,17 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
+using ClassIsland.Core.Abstractions.Services;
+using ClassIsland.Core.Models.Weather;
 using ClassIsland.Helpers;
 using ClassIsland.Models;
-using ClassIsland.Models.Weather;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace ClassIsland.Services;
 
-public class WeatherService : IHostedService
+public class WeatherService : IHostedService, IWeatherService
 {
     public const string CitiesDatabasePath = "./Temp/xiaomi_weather.db";
 
@@ -39,6 +38,8 @@ public class WeatherService : IHostedService
     {
         Interval = TimeSpan.FromMinutes(5)
     };
+
+    public bool IsWeatherRefreshed { get; set; } = false;
 
     public WeatherService(SettingsService settingsService, FileFolderService fileFolderService, IHostApplicationLifetime hostApplicationLifetime, ILogger<WeatherService> logger)
     {
@@ -92,7 +93,11 @@ public class WeatherService : IHostedService
             using var http = new HttpClient();
             var uri = $"https://weatherapi.market.xiaomi.com/wtr-v3/weather/all?latitude=110&longitude=112&locationKey=weathercn%3A{Settings.CityId}&days=15&appKey=weather20151024&sign=zUFJoAR2ZVrDy1vF3D07&isGlobal=false&locale=zh_cn";
             Logger.LogInformation("获取天气信息： {}", uri);
-            Settings.LastWeatherInfo = await WebRequestHelper.GetJson<WeatherInfo>(new Uri(uri));
+            var info = await WebRequestHelper.GetJson<WeatherInfo>(new Uri(uri));
+            info.Alerts.RemoveAll(i => Settings.ExcludedWeatherAlerts.FirstOrDefault(x =>
+                (!string.IsNullOrWhiteSpace(x)) && i.Title.Contains(x)) != null);
+            Settings.LastWeatherInfo = info;
+            IsWeatherRefreshed = true;
         }
         catch (Exception ex)
         {

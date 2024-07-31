@@ -1,6 +1,7 @@
 # 在 Windows 7 上安装 ClassIsland
 
-**不建议在 Windows 10 以下的操作系统上运行 ClassIsland。** 
+> [!warning]
+> **不建议在 Windows 10 以下的操作系统上运行 ClassIsland。** 
 
 如果要在 Windows 7 上正常运行 ClassIsland，请跟随本指引做以下准备工作。
 
@@ -21,6 +22,8 @@
 | --- | --- |
 | `DOTNET_GCName` | `clrgc.dll` |
 | `DOTNET_EnableWriteXorExecute` | `0` |
+
+**您可以下载我们的[修复工具](https://github.com/ClassIsland/ClassIsland.RepairToolForWindows7/releases/download/v1.0.0/RepairToolForWindows7.bat)进行一键修复**
 
 您也可以在命令提示符中运行以下的命令快速完成环境变量的设置。
 

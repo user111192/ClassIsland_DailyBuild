@@ -7,7 +7,8 @@
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:converters="clr-namespace:ClassIsland.Converters"
              xmlns:classIsland="clr-namespace:ClassIsland"
-             d:DataContext="{d:DesignInstance classIsland:MainWindow}"
+             xmlns:converters1="clr-namespace:ClassIsland.Core.Converters;assembly=ClassIsland.Core"
+             d:DataContext="{d:DesignInstance local:ClassNotificationProviderControl}"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="300">
     <UserControl.Resources>
@@ -20,7 +21,7 @@
             <materialDesign:PackIcon Kind="Class" VerticalAlignment="Center"
                                      Height="20" Width="20"/>
         </StackPanel>
-        <converters:TimeSpanToTotalSecondsConverter x:Key="TimeSpanToTotalSecondsConverter" />
+        <converters1:TimeSpanToTotalSecondsConverter x:Key="TimeSpanToTotalSecondsConverter" />
 
         <!-- 准备上课 -->
         <Grid x:Key="ClassPrepareNotifyOverlay">
@@ -33,7 +34,7 @@
             <TextBlock Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="16"
                        Margin="12 0">
                 <Run Text="距上课还剩"/>
-                <Run Text="{Binding ViewModel.OnClassLeftTime, Converter={StaticResource TimeSpanToTotalSecondsConverter}, Mode=OneWay}" FontWeight="Bold"/>
+                <Run Text="{Binding LessonsService.OnClassLeftTime, Converter={StaticResource TimeSpanToTotalSecondsConverter}, Mode=OneWay}" FontWeight="Bold"/>
                 <Run Text="秒"/>
             </TextBlock>
 
@@ -42,11 +43,14 @@
                         TextElement.FontSize="16"
                         Margin="12 0">
                 <TextBlock VerticalAlignment="Center" Text="下节课是："/>
-                <TextBlock Text="{Binding ViewModel.NextSubject.Name}" FontWeight="Bold" FontSize="20" VerticalAlignment="Center"/>
-                <TextBlock Margin="6 0 0 0" FontSize="14" VerticalAlignment="Bottom">
-                    <Run Text="{Binding ViewModel.NextTimeLayoutItem.StartSecond, ConverterCulture=zh-cn, StringFormat={}{0:HH:mm}}">
+                <TextBlock Text="{Binding LessonsService.NextClassSubject.Name}" FontWeight="Bold" FontSize="20" VerticalAlignment="Center"/>
+                <TextBlock Margin="6 0 0 0" FontSize="14" VerticalAlignment="Bottom"
+                           Text="{Binding LessonsService.NextClassSubject.TeacherName}"
+                           Visibility="{Binding ShowTeacherName, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                <TextBlock FontSize="14" VerticalAlignment="Bottom" Margin="2 0 0 0">
+                    <Run Text="{Binding LessonsService.NextClassTimeLayoutItem.StartSecond, ConverterCulture=zh-cn, StringFormat={}{0:HH:mm}}">
                     </Run><Run Text="-">
-                    </Run><Run Text="{Binding ViewModel.NextTimeLayoutItem.EndSecond, ConverterCulture=zh-cn, StringFormat={}{0:HH:mm}}"/>
+                    </Run><Run Text="{Binding LessonsService.NextClassTimeLayoutItem.EndSecond, ConverterCulture=zh-cn, StringFormat={}{0:HH:mm}}"/>
                 </TextBlock>
             </StackPanel>
         </Grid>
@@ -81,7 +85,7 @@
             <!-- 课间时间 -->
             <TextBlock Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="16" Margin="12 0">
                 <Run Text="本节课间休息长"/>
-                <Run Text="{Binding ViewModel.CurrentTimeLayoutItem.Last, ConverterCulture=zh-cn, Mode=OneWay}" FontWeight="Bold"/>
+                <Run Text="{Binding LessonsService.CurrentTimeLayoutItem.Last, ConverterCulture=zh-cn, Mode=OneWay}" FontWeight="Bold"/>
             </TextBlock>
 
             <!-- 科目信息 -->
@@ -89,16 +93,19 @@
                         Margin="12 0"
                         TextElement.FontSize="16">
                 <TextBlock VerticalAlignment="Center" Text="下节课是："/>
-                <TextBlock Text="{Binding ViewModel.NextSubject.Name}" FontWeight="Bold" FontSize="20" VerticalAlignment="Center"/>
-                <TextBlock Margin="6 0 0 0" FontSize="14" VerticalAlignment="Bottom">
-                    <Run Text="{Binding ViewModel.NextTimeLayoutItem.StartSecond, ConverterCulture=zh-cn, StringFormat={}{0:HH:mm}}">
+                <TextBlock Text="{Binding LessonsService.NextClassSubject.Name}" FontWeight="Bold" FontSize="20" VerticalAlignment="Center"/>
+                <TextBlock Margin="6 0 0 0" FontSize="14" VerticalAlignment="Bottom"
+                           Text="{Binding LessonsService.NextClassSubject.TeacherName}"
+                           Visibility="{Binding ShowTeacherName, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                <TextBlock Margin="2 0 0 0" FontSize="14" VerticalAlignment="Bottom">
+                    <Run Text="{Binding LessonsService.NextClassTimeLayoutItem.StartSecond, ConverterCulture=zh-cn, StringFormat={}{0:HH:mm}}">
                     </Run><Run Text="-">
-                    </Run><Run Text="{Binding ViewModel.NextTimeLayoutItem.EndSecond, ConverterCulture=zh-cn, StringFormat={}{0:HH:mm}}"/>
+                    </Run><Run Text="{Binding LessonsService.NextClassTimeLayoutItem.EndSecond, ConverterCulture=zh-cn, StringFormat={}{0:HH:mm}}"/>
                 </TextBlock>
             </StackPanel>
         </Grid>
     </UserControl.Resources>
-    <Grid Margin="16 0">
+    <Grid Margin="16 0" DataContext="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=local:ClassNotificationProviderControl}}">
         <materialDesign:Transitioner SelectedIndex="{Binding SlideIndex, RelativeSource={RelativeSource FindAncestor, AncestorType=local:ClassNotificationProviderControl}, Mode=OneWay}">
             <materialDesign:TransitionerSlide>
                 <materialDesign:TransitionerSlide.BackwardWipe>

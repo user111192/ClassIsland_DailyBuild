@@ -2,10 +2,9 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Windows;
-using System.Windows.Controls;
-using ClassIsland.Core;
-using ClassIsland.Core.Interfaces;
+
+using ClassIsland.Shared;
+using ClassIsland.Shared.Interfaces;
 
 namespace ClassIsland;
 

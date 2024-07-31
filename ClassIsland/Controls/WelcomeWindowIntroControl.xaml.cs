@@ -1,20 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Windows.Threading;
+using ClassIsland.Core.Abstractions.Services;
 using ClassIsland.Services;
 
 namespace ClassIsland.Controls;
@@ -24,7 +15,7 @@ namespace ClassIsland.Controls;
 /// </summary>
 public partial class WelcomeWindowIntroControl : UserControl
 {
-    private HangService HangService { get; } = App.GetService<HangService>();
+    private IHangService HangService { get; } = App.GetService<IHangService>();
 
 
     public WelcomeWindowIntroControl()
@@ -34,7 +25,7 @@ public partial class WelcomeWindowIntroControl : UserControl
 
     protected override void OnInitialized(EventArgs e)
     {
-        Foreground = new SolidColorBrush(App.GetService<ThemeService>().CurrentTheme!.Body);
+        Foreground = new SolidColorBrush(App.GetService<IThemeService>().CurrentTheme!.Body);
         _ = Task.Run(() =>
         {
             Play("Intro");

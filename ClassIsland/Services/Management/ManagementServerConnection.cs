@@ -1,21 +1,24 @@
 using System;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
-using ClassIsland.Core.Abstraction.Services;
-using ClassIsland.Core.Models.Management;
-using ClassIsland.Core.Protobuf.Client;
-using ClassIsland.Core.Protobuf.Enum;
-using ClassIsland.Core.Protobuf.Server;
-using ClassIsland.Core.Protobuf.Service;
+
+using ClassIsland.Shared.Abstraction.Services;
+using ClassIsland.Shared.Models.Management;
+using ClassIsland.Shared.Protobuf.Client;
+using ClassIsland.Shared.Protobuf.Enum;
+using ClassIsland.Shared.Protobuf.Server;
+using ClassIsland.Shared.Protobuf.Service;
 using ClassIsland.Helpers;
+
 using Grpc.Core;
-using Grpc.Core.Utils;
 using Grpc.Net.Client;
+
 using MahApps.Metro.Controls;
+
 using Microsoft.Extensions.Logging;
+
 using Timer = System.Timers.Timer;
 
 namespace ClassIsland.Services.Management;

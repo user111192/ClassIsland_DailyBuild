@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.ObjectModel;
-using ClassIsland.Core.Models.Profile;
-using ClassIsland.Models;
+
+using ClassIsland.Shared.Models.Profile;
+
 using CommunityToolkit.Mvvm.ComponentModel;
+
 using MaterialDesignThemes.Wpf;
 
 namespace ClassIsland.ViewModels;
@@ -24,6 +26,7 @@ public class ProfileSettingsViewModel : ObservableRecipient
     private Subject? _selectedSubject;
     private bool _isPanningModeEnabled = false;
     private bool _isDragEntering = false;
+    private string _tempOverlayClassPlanTimeLayoutId = "";
 
     public object DrawerContent
     {
@@ -195,4 +198,14 @@ public class ProfileSettingsViewModel : ObservableRecipient
         }
     }
 
+    public string TempOverlayClassPlanTimeLayoutId
+    {
+        get => _tempOverlayClassPlanTimeLayoutId;
+        set
+        {
+            if (value == _tempOverlayClassPlanTimeLayoutId) return;
+            _tempOverlayClassPlanTimeLayoutId = value;
+            OnPropertyChanged();
+        }
+    }
 }

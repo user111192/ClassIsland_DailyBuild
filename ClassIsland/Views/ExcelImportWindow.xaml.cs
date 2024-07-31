@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -9,38 +8,40 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using System.Windows.Threading;
+
 using ClassIsland.Controls;
 using ClassIsland.Converters;
-using ClassIsland.Core.Models.Profile;
+using ClassIsland.Core.Abstractions.Services;
+using ClassIsland.Core.Controls;
+using ClassIsland.Core.Converters;
+using ClassIsland.Core.Models.Theming;
+using ClassIsland.Shared.Models.Profile;
 using ClassIsland.Models;
 using ClassIsland.Services;
 using ClassIsland.ViewModels;
-using ICSharpCode.AvalonEdit.Editing;
+
 using MaterialDesignThemes.Wpf;
+
 using Microsoft.AppCenter.Analytics;
-using Microsoft.Win32;
+
 using OfficeOpenXml;
+
 using unvell.ReoGrid;
 using unvell.ReoGrid.Events;
 using unvell.ReoGrid.Graphics;
 using unvell.ReoGrid.IO;
-using unvell.ReoGrid.IO.OpenXML.Schema;
+
 using CheckBox = System.Windows.Controls.CheckBox;
 using DataFormats = System.Windows.DataFormats;
 using DragDropEffects = System.Windows.DragDropEffects;
 using DragEventArgs = System.Windows.DragEventArgs;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 using OpenFileDialog = System.Windows.Forms.OpenFileDialog;
-using Path = System.IO.Path;
+using Sentry;
 
 namespace ClassIsland.Views;
 
@@ -51,9 +52,9 @@ public partial class ExcelImportWindow : MyWindow
 {
     public ExcelImportViewModel ViewModel { get; } = new();
 
-    private ThemeService ThemeService { get; }
+    private IThemeService ThemeService { get; }
 
-    public ProfileService ProfileService { get; }
+    public IProfileService ProfileService { get; }
 
     public string ExcelSourcePath { get; set; } = "";
 
@@ -66,7 +67,7 @@ public partial class ExcelImportWindow : MyWindow
 
     public bool ImportTimeLayoutOnly { get; set; } = false;
 
-    public ExcelImportWindow(ThemeService themeService, ProfileService profileService)
+    public ExcelImportWindow(IThemeService themeService, IProfileService profileService)
     {
         InitializeComponent();
         DataContext = this;
@@ -238,7 +239,7 @@ public partial class ExcelImportWindow : MyWindow
             var stream = File.Open(ExcelSourcePath, FileMode.Open);
             var sw = new Stopwatch();
             sw.Start();
-            App.GetService<HangService>().AssumeHang();
+            App.GetService<IHangService>().AssumeHang();
             try
             {
                 Grid.Load(stream, FileFormat.Excel2007);
@@ -316,20 +317,7 @@ public partial class ExcelImportWindow : MyWindow
     private void OpenProfileSettingsWindow()
     {
         var window = App.GetService<ProfileSettingsWindow>();
-        if (!window.IsOpened)
-        {
-            Analytics.TrackEvent("打开档案设置窗口");
-            window.IsOpened = true;
-            window.Show();
-        }
-        else
-        {
-            if (window.WindowState == WindowState.Minimized)
-            {
-                window.WindowState = WindowState.Normal;
-            }
-            window.Activate();
-        }
+        window.Open();
     }
 
     private void EnterSelectingModeCommand_OnExecuted(object sender, ExecutedRoutedEventArgs e)
@@ -626,7 +614,7 @@ public partial class ExcelImportWindow : MyWindow
         classPlan.TimeLayouts = ProfileService.Profile.TimeLayouts;
         classPlan.TimeLayoutId = ViewModel.SelectedTimeLayoutId;
         classPlan.RefreshClassesList();
-        var d = (DictionaryValueAccessConverter)FindResource("DictionaryValueAccessConverter");
+        var d = (SubjectsDictionaryValueAccessConverter)FindResource("DictionaryValueAccessConverter");
         d.SourceDictionary = ProfileService.Profile.Subjects;
         var count = (from j in timeLayout.Layouts where j.TimeType == 0 select j).ToList().Count;
         //for (var i = 0; i < count; i++)

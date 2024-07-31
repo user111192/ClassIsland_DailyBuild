@@ -1,8 +1,7 @@
-﻿using System.Runtime.InteropServices;
-using System;
+﻿using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using Microsoft.Win32;
 
 namespace ClassIsland;
 
@@ -26,7 +25,7 @@ public class RegistryNotifier
     private static int REG_NOTIFY_CHANGE_LAST_SET = 0x4;
     private static int REG_NOTIFY_CHANGE_SECURITY = 0x8;
     /// <summary>
-    /// 打开的注册表句饼
+    /// 打开的注册表句柄
     /// </summary>
     private IntPtr _OpenIntPtr = IntPtr.Zero;
 

@@ -1,25 +1,21 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Drawing;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Forms;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
+
 using ClassIsland.Controls;
+using ClassIsland.Core;
+using ClassIsland.Core.Abstractions.Services;
+using ClassIsland.Core.Controls;
+using ClassIsland.Core.Helpers.Native;
+using ClassIsland.Core.Models;
 using ClassIsland.Models;
 using ClassIsland.Services;
 using ClassIsland.ViewModels;
+
 using Microsoft.Extensions.Logging;
-using static ClassIsland.NativeWindowHelper;
 
 namespace ClassIsland.Views;
 
@@ -62,8 +58,8 @@ public partial class WindowsPicker : MyWindow
         var w = NativeWindowHelper.GetAllWindows();
         var q = ViewModel.IsFilteredFullscreen ?
             (from i in w
-            where Screen.AllScreens.Any(s => new System.Drawing.Rectangle(i.WindowRect.Left, i.WindowRect.Top,
-                i.WindowRect.Right - i.WindowRect.Left, i.WindowRect.Bottom - i.WindowRect.Top).Contains(s.Bounds) &&
+            where Screen.AllScreens.Any(s => new System.Drawing.Rectangle(i.WindowRect.left, i.WindowRect.top,
+                i.WindowRect.right - i.WindowRect.left, i.WindowRect.bottom - i.WindowRect.top).Contains(s.Bounds) &&
                                              i.IsVisible && i.ClassName != "WorkerW")
             select i)
             :
@@ -82,7 +78,7 @@ public partial class WindowsPicker : MyWindow
             }
         }
 
-        App.GetService<HangService>().AssumeHang();
+        App.GetService<IHangService>().AssumeHang();
         ViewModel.DesktopWindows = c;
     }
 

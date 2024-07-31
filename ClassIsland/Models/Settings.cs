@@ -5,21 +5,25 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Media;
-using System.Windows.Media.Converters;
-using ClassIsland.Core;
-using ClassIsland.Core.Abstraction.Models;
-using ClassIsland.Core.Enums;
-using ClassIsland.Core.Interfaces;
-using ClassIsland.Core.Models.Notification;
+using ClassIsland.Core.Models.Weather;
+using ClassIsland.Helpers;
+using ClassIsland.Shared;
+using ClassIsland.Shared.Abstraction.Models;
+using ClassIsland.Shared.Enums;
+using ClassIsland.Shared.Models.Notification;
 using ClassIsland.Models.AllContributors;
-using ClassIsland.Models.Weather;
 using ClassIsland.Services;
+using ClassIsland.Services.AppUpdating;
 using CommunityToolkit.Mvvm.ComponentModel;
-using MaterialDesignColors;
+
 using Microsoft.Extensions.Logging;
+
 using Newtonsoft.Json;
+
 using Octokit;
+
 using WindowsShortcutFactory;
+
 using File = System.IO.File;
 
 namespace ClassIsland.Models;
@@ -117,11 +121,13 @@ public class Settings : ObservableRecipient, ILessonControlSettings, INotificati
     private DateTime _diagnosticLastCrashTime = DateTime.MinValue;
     private int _diagnosticMemoryKillCount = 0;
     private DateTime _diagnosticLastMemoryKillTime = DateTime.Now;
+    private bool _isSystemSpeechSystemExist = false;
+    private bool _isNetworkConnect = false;
     private bool _isSpeechEnabled = true;
     private double _speechVolume = 1.0;
     private int _speechSource = 0;
     private string _edgeTtsVoiceName = "zh-CN-XiaoxiaoNeural";
-    private string _exactTimeServer = "cn.ntp.org.cn";
+    private string _exactTimeServer = "ntp.aliyun.com";
     private bool _isExactTimeEnabled = true;
     private double _timeOffsetSeconds = 0.0;
     private bool _isNotificationEffectEnabled = true;
@@ -135,10 +141,18 @@ public class Settings : ObservableRecipient, ILessonControlSettings, INotificati
     private double _notificationEffectRenderingScale = 1.0;
     private bool _isNotificationEffectRenderingScaleAutoSet = false;
     private AllContributorsRc _contributorsCache = new();
+    private bool _isNotificationSpeechEnabled = false;
     private bool _allowNotificationSpeech = false;
     private bool _allowNotificationEffect = true;
     private bool _allowNotificationSound = false;
     private bool _allowNotificationTopmost = true;
+    private string _updateArtifactHash = "";
+    private ObservableCollection<string> _excludedWeatherAlerts = new();
+    private string _currentComponentConfig = "Default";
+    private Version _lastAppVersion = new Version("0.0.0.0");
+    private bool _showComponentsMigrateTip = false;
+    private bool _expAllowEditingActivatedTimeLayout = false;
+    private string _directoryIsDesktopShowed = "";
 
     public void NotifyPropertyChanged(string propertyName)
     {
@@ -163,6 +177,17 @@ public class Settings : ObservableRecipient, ILessonControlSettings, INotificati
         {
             if (value == _isWelcomeWindowShowed) return;
             _isWelcomeWindowShowed = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string DirectoryIsDesktopShowed
+    {
+        get => _directoryIsDesktopShowed;
+        set
+        {
+            if (value == _directoryIsDesktopShowed) return;
+            _directoryIsDesktopShowed = value;
             OnPropertyChanged();
         }
     }
@@ -343,6 +368,22 @@ public class Settings : ObservableRecipient, ILessonControlSettings, INotificati
         }
     }
 
+    public bool IsUrlProtocolRegistered
+    {
+        get => UriProtocolRegisterHelper.IsRegistered();
+        set
+        {
+            if (value)
+            {
+                UriProtocolRegisterHelper.Register();
+            }
+            else
+            {
+                UriProtocolRegisterHelper.UnRegister();
+            }
+        }
+    }
+
     /// <summary>
     /// TaskBarIcon点击行为
     /// </summary>
@@ -351,6 +392,7 @@ public class Settings : ObservableRecipient, ILessonControlSettings, INotificati
     ///     <item>0 - 打开主菜单</item>
     ///     <item>1 - 打开档案编辑窗口</item>
     ///     <item>2 - 显示/隐藏主界面</item>
+    ///     <item>3 - 打开换课窗口</item>
     /// </list>
     /// </value>
     public int TaskBarIconClickBehavior
@@ -705,6 +747,21 @@ public class Settings : ObservableRecipient, ILessonControlSettings, INotificati
 
     #endregion
 
+    #region Components
+
+    public string CurrentComponentConfig
+    {
+        get => _currentComponentConfig;
+        set
+        {
+            if (value == _currentComponentConfig) return;
+            _currentComponentConfig = value;
+            OnPropertyChanged();
+        }
+    }
+
+    #endregion
+
     #region Notifications
 
     public bool IsNotificationEnabled
@@ -762,6 +819,33 @@ public class Settings : ObservableRecipient, ILessonControlSettings, INotificati
         }
     }
 
+    public bool IsSystemSpeechSystemExist
+    {
+        get => _isSystemSpeechSystemExist;
+        set
+        {
+            if (value == _isSystemSpeechSystemExist) return;
+            _isSystemSpeechSystemExist = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool IsNetworkConnect
+    {
+        get => _isNetworkConnect;
+        set
+        {
+            if (value == _isNetworkConnect) return;
+            if (value == false && !IsSystemSpeechSystemExist)
+            {
+                IsNotificationSpeechEnabled = false;
+                AllowNotificationSpeech = false;
+            }
+            _isNetworkConnect = value;
+            OnPropertyChanged();
+        }
+    }
+
     public bool IsSpeechEnabled
     {
         get => _isSpeechEnabled;
@@ -796,7 +880,14 @@ public class Settings : ObservableRecipient, ILessonControlSettings, INotificati
         get => _speechSource;
         set
         {
+
             if (value == _speechSource) return;
+            if (!IsSystemSpeechSystemExist)
+            {
+                _speechSource = 1;
+                OnPropertyChanged();
+                return;
+            }
             _speechSource = value;
             OnPropertyChanged();
         }
@@ -875,6 +966,17 @@ public class Settings : ObservableRecipient, ILessonControlSettings, INotificati
         {
             if (value == _isNotificationEffectRenderingScaleAutoSet) return;
             _isNotificationEffectRenderingScaleAutoSet = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool IsNotificationSpeechEnabled
+    {
+        get => _isNotificationSpeechEnabled;
+        set
+        {
+            if (value == _isNotificationSpeechEnabled) return;
+            _isNotificationSpeechEnabled = value;
             OnPropertyChanged();
         }
     }
@@ -1107,6 +1209,17 @@ public class Settings : ObservableRecipient, ILessonControlSettings, INotificati
         }
     }
 
+    public string UpdateArtifactHash
+    {
+        get => _updateArtifactHash;
+        set
+        {
+            if (value == _updateArtifactHash) return;
+            _updateArtifactHash = value;
+            OnPropertyChanged();
+        }
+    }
+
     #endregion
 
     #region Window
@@ -1234,6 +1347,17 @@ public class Settings : ObservableRecipient, ILessonControlSettings, INotificati
         }
     }
 
+    public ObservableCollection<string> ExcludedWeatherAlerts
+    {
+        get => _excludedWeatherAlerts;
+        set
+        {
+            if (Equals(value, _excludedWeatherAlerts)) return;
+            _excludedWeatherAlerts = value;
+            OnPropertyChanged();
+        }
+    }
+
     #endregion
 
     #region Exp
@@ -1246,6 +1370,17 @@ public class Settings : ObservableRecipient, ILessonControlSettings, INotificati
         {
             if (value == _expIsExcelImportEnabled) return;
             _expIsExcelImportEnabled = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool ExpAllowEditingActivatedTimeLayout
+    {
+        get => _expAllowEditingActivatedTimeLayout;
+        set
+        {
+            if (value == _expAllowEditingActivatedTimeLayout) return;
+            _expAllowEditingActivatedTimeLayout = value;
             OnPropertyChanged();
         }
     }
@@ -1419,6 +1554,28 @@ public class Settings : ObservableRecipient, ILessonControlSettings, INotificati
         {
             if (Equals(value, _contributorsCache)) return;
             _contributorsCache = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public Version LastAppVersion
+    {
+        get => _lastAppVersion;
+        set
+        {
+            if (Equals(value, _lastAppVersion)) return;
+            _lastAppVersion = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool ShowComponentsMigrateTip
+    {
+        get => _showComponentsMigrateTip;
+        set
+        {
+            if (value == _showComponentsMigrateTip) return;
+            _showComponentsMigrateTip = value;
             OnPropertyChanged();
         }
     }

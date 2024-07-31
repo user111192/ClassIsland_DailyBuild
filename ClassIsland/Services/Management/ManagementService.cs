@@ -1,23 +1,31 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
-using ClassIsland.Core.Abstraction.Services;
-using ClassIsland.Core.Enums;
-using ClassIsland.Core.Models.Management;
-using ClassIsland.Core.Protobuf.Enum;
+using ClassIsland.Core;
+using ClassIsland.Core.Abstractions.Services.Management;
+using ClassIsland.Core.Controls.CommonDialog;
+using ClassIsland.Shared.Abstraction.Services;
+using ClassIsland.Shared.Enums;
+using ClassIsland.Shared.Models.Management;
+using ClassIsland.Shared.Models.Profile;
+using ClassIsland.Shared.Protobuf.Enum;
 using ClassIsland.Helpers;
 using ClassIsland.Models;
-using ControlzEx.Standard;
+
 using MaterialDesignThemes.Wpf;
+
 using Microsoft.Extensions.Logging;
-using static ClassIsland.Core.Helpers.ConfigureFileHelper;
-using Application = System.Windows.Application;
-using CommonDialog = ClassIsland.Controls.CommonDialog;
+
+using static ClassIsland.Shared.Helpers.ConfigureFileHelper;
+
+using CommonDialog = ClassIsland.Core.Controls.CommonDialog.CommonDialog;
 
 namespace ClassIsland.Services.Management;
 
-public class ManagementService
+public class ManagementService : IManagementService
 {
     static ManagementService()
     {
@@ -102,7 +110,7 @@ public class ManagementService
     {
         if (e.Type == CommandTypes.RestartApp)
         {
-            App.Restart(true);
+            AppBase.Current.Restart(true);
         }
     }
 
@@ -182,10 +190,19 @@ public class ManagementService
             return;
         var w = CopyObject(settings);
         w.IsManagementEnabled = true;
+        // 清空旧的配置
+        foreach (var i in new List<string>([ManagementManifestPath, ManagementPolicyPath, ManagementVersionsPath, ProfileService.ManagementClassPlanPath, ProfileService.ManagementSubjectsPath, ProfileService.ManagementTimeLayoutPath, "./Profiles/_management-profile.json"]).Where(File.Exists))
+        {
+            File.Delete(i);
+            if (File.Exists(i + ".bak"))
+            {
+                File.Delete(i + ".bak");
+            }
+        }
         SaveConfig(ManagementSettingsPath, w);
         CommonDialog.ShowInfo($"已加入组织 {mf.OrganizationName} 的管理。应用将重启以应用更改。");
         
-        App.Restart();
+        AppBase.Current.Restart();
     }
 
     public async Task ExitManagementAsync()
@@ -215,6 +232,6 @@ public class ManagementService
 
         CommonDialog.ShowInfo($"已退出组织 {Manifest.OrganizationName} 的管理。应用将重启以应用更改。");
 
-        App.Restart();
+        AppBase.Current.Restart();
     }
 }

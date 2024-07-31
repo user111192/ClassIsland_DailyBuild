@@ -3,26 +3,16 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Windows.Threading;
-using ClassIsland.Core;
-using ClassIsland.Core.Abstraction.Models;
-using ClassIsland.Core.Interfaces;
-using ClassIsland.Core.Models.Profile;
-using ClassIsland.Models;
+using ClassIsland.Core.Abstractions.Services;
+using ClassIsland.Core.Models.AttachedSettings;
+using ClassIsland.Shared;
+using ClassIsland.Shared.Abstraction.Models;
+using ClassIsland.Shared.Models.Profile;
 using ClassIsland.Models.AttachedSettings;
 using ClassIsland.Services;
 
@@ -52,7 +42,7 @@ public partial class LessonControl : UserControl, INotifyPropertyChanged
 
     public SettingsService SettingsService { get; } = App.GetService<SettingsService>();
 
-    private ExactTimeService ExactTimeService { get; } = App.GetService<ExactTimeService>();
+    private IExactTimeService ExactTimeService { get; } = App.GetService<IExactTimeService>();
 
     public static readonly DependencyProperty CurrentTimeLayoutItemProperty = DependencyProperty.Register(
         nameof(CurrentTimeLayoutItem), typeof(TimeLayoutItem), typeof(LessonControl), new PropertyMetadata(default(TimeLayoutItem)));
@@ -298,7 +288,7 @@ public partial class LessonControl : UserControl, INotifyPropertyChanged
 
         final:
         SettingsSource =
-            (ILessonControlSettings?)AttachedSettingsHostService.GetAttachedSettingsByPriority<LessonControlAttachedSettings>(
+            (ILessonControlSettings?)IAttachedSettingsHostService.GetAttachedSettingsByPriority<LessonControlAttachedSettings>(
                 new Guid("58e5b69a-764a-472b-bcf7-003b6a8c7fdf"),
                 CurrentSubject,
                 CurrentTimeLayoutItem,

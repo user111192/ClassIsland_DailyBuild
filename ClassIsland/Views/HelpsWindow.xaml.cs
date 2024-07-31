@@ -4,22 +4,23 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using System.Windows.Threading;
+
 using ClassIsland.Controls;
+using ClassIsland.Core.Abstractions.Services;
+using ClassIsland.Core.Controls;
 using ClassIsland.ViewModels;
+
 using MdXaml;
+
 using Microsoft.AppCenter.Analytics;
 using Microsoft.Extensions.Logging;
+using Sentry;
 
 namespace ClassIsland.Views;
 
@@ -50,9 +51,12 @@ public partial class HelpsWindow : MyWindow
 
     public string InitDocumentName { get; set; } = "欢迎";
 
-    public HelpsWindow(ILogger<HelpsWindow> logger)
+    private IUriNavigationService UriNavigationService { get; }
+
+    public HelpsWindow(ILogger<HelpsWindow> logger, IUriNavigationService uriNavigationService)
     {
         Logger = logger;
+        UriNavigationService = uriNavigationService;
         DataContext = this;
         InitializeComponent();
     }
@@ -106,10 +110,9 @@ public partial class HelpsWindow : MyWindow
 
     public async void CoreNavigateTo(string name)
     {
-        Analytics.TrackEvent("浏览帮助文档",
-        new PagesDictionary
+        SentrySdk.Metrics.Increment("views.HelpWindow.navigate", tags: new PagesDictionary()
         {
-            { "Name", name }
+            { "Page", name }
         });
         //ScrollViewerDocument.ScrollToTop();
         ViewModel.IsLoading = true;
@@ -254,33 +257,6 @@ public partial class HelpsWindow : MyWindow
             return;
         }
 
-        if (uri.Scheme != "ci")
-        {
-            try
-            {
-                Process.Start(new ProcessStartInfo(uri.ToString())
-                {
-                    UseShellExecute = true
-                });
-            }
-            catch (Exception exception)
-            {
-                Logger.LogError(exception, "Unable to open external link.");
-            }
-            return;
-        }
-        if (uri.Host != "app" || uri.Segments.Length <= 1)
-            return;
-        var mw = App.GetService<MainWindow>();
-        switch (uri.Segments[1])
-        {
-            case "settings/":
-                mw.OpenSettingsWindow();
-                mw.SettingsWindow.OpenUri(uri);
-                break;
-            case "profile":
-                mw.OpenProfileSettingsWindow();
-                break;
-        }
+        UriNavigationService.NavigateWrapped(uri);
     }
 }

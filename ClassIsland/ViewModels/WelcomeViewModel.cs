@@ -1,5 +1,7 @@
 ﻿using System;
+
 using ClassIsland.Models;
+
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace ClassIsland.ViewModels;
@@ -19,6 +21,8 @@ public class WelcomeViewModel : ObservableRecipient
     private bool _createStartMenuShortcut = true;
     private bool _createDesktopShortcut = false;
     private int _slideIndexMaster = 0;
+    private bool _registerUrlScheme = false;
+    private bool _createClassSwapShortcut = false;
 
     public Guid DialogId
     {
@@ -164,6 +168,28 @@ public class WelcomeViewModel : ObservableRecipient
         {
             if (value == _createDesktopShortcut) return;
             _createDesktopShortcut = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool RegisterUrlScheme
+    {
+        get => _registerUrlScheme;
+        set
+        {
+            if (value == _registerUrlScheme) return;
+            _registerUrlScheme = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool CreateClassSwapShortcut
+    {
+        get => _createClassSwapShortcut;
+        set
+        {
+            if (value == _createClassSwapShortcut) return;
+            _createClassSwapShortcut = value;
             OnPropertyChanged();
         }
     }

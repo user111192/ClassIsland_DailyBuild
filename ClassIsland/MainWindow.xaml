@@ -16,7 +16,8 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:tb="clr-namespace:H.NotifyIcon;assembly=H.NotifyIcon.Wpf"
         xmlns:diag="clr-namespace:System.Diagnostics;assembly=WindowsBase"
-        xmlns:profile="clr-namespace:ClassIsland.Core.Models.Profile;assembly=ClassIsland.Core"
+        xmlns:profile="clr-namespace:ClassIsland.Shared.Models.Profile;assembly=ClassIsland.Shared"
+        xmlns:converters1="clr-namespace:ClassIsland.Core.Converters;assembly=ClassIsland.Core"
         TextElement.Foreground="{DynamicResource MaterialDesignBody}"
         TextElement.FontWeight="{Binding ViewModel.Settings.MainWindowFontWeight2, Converter={StaticResource IntToFontWeightConverter}}"
         TextElement.FontSize="14"
@@ -40,7 +41,7 @@
                         Executed="TrayIconOnClicked_OnExecuted"/>
     </Window.CommandBindings>
     <Window.Resources>
-        <converters:IndexConverter x:Key="IndexConverter" />
+        <converters1:IndexConverter x:Key="IndexConverter" />
         <profile:ClassPlan x:Key="FallbackClassPlan"/>
         <Style TargetType="FrameworkElement" x:Key="DockingStyle">
             <Style.Triggers>
@@ -70,20 +71,20 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
-
-        <ContextMenu FontFamily="{StaticResource HarmonyOsSans}" x:Key="AppContextMenu" 
+        <converters1:BooleanToVisibilityReConverter x:Key="BooleanToVisibilityReConverter"/>
+        <ContextMenu FontFamily="{StaticResource HarmonyOsSans}" x:Key="AppContextMenu"
+                     MinWidth="150"
+                     StaysOpen="True"
                      IsEnabled="{Binding ViewModel.IsBusy, Converter={StaticResource InvertBooleanConverter}}">
-            <MenuItem Click="MenuItemAbout_OnClick" IsEnabled="{Binding ViewModel.Settings.IsWelcomeWindowShowed, Mode=OneWay}">
+            <ContextMenu.Resources>
+                <converters1:BooleanAndToVisibilityMultiConverter x:Key="BooleanAndToVisibilityMultiConverter" />
+            </ContextMenu.Resources>
+            <MenuItem Header="ClassIsland" Click="MenuItemAbout_OnClick" IsEnabled="{Binding ViewModel.Settings.IsWelcomeWindowShowed}">
                 <MenuItem.Icon>
                     <Image Source="/Assets/AppLogo.ico"/>
                 </MenuItem.Icon>
-                <MenuItem.Header>
-                    <TextBlock>
-                        <Run Text="ClassIsland"/>
-                    </TextBlock>
-                </MenuItem.Header>
             </MenuItem>
-            <MenuItem Header="更新可用…" Click="MenuItemUpdates_OnClick" IsEnabled="{Binding ViewModel.Settings.IsWelcomeWindowShowed, Mode=OneWay}">
+            <MenuItem Header="更新可用…" Click="MenuItemUpdates_OnClick" IsEnabled="{Binding ViewModel.Settings.IsWelcomeWindowShowed}">
                 <MenuItem.Icon>
                     <materialDesign:PackIcon Kind="UploadOutline"/>
                 </MenuItem.Icon>
@@ -97,16 +98,53 @@
                     </Style>
                 </MenuItem.Style>
             </MenuItem>
-            <MenuItem Icon="{materialDesign:PackIcon HelpCircleOutline}" Header="帮助…" Click="MenuItemHelps_OnClick" Visibility="{Binding ViewModel.Settings.IsWelcomeWindowShowed, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-            <Separator />
-            <MenuItem Header="显示主界面" IsCheckable="True" Checked="MenuItemShowMainWindow_OnChecked" Unchecked="MenuItemShowMainWindow_OnUnchecked" IsChecked="{Binding ViewModel.IsMainWindowVisible}" Visibility="{Binding ViewModel.Settings.IsWelcomeWindowShowed, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-            <MenuItem Icon="{materialDesign:PackIcon NotificationClearAll}" Header="清除全部提醒" Click="MenuItemClearAllNotifications_OnClick" Visibility="{Binding ViewModel.Settings.IsWelcomeWindowShowed, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-            <Separator Visibility="{Binding ViewModel.Settings.IsWelcomeWindowShowed, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-            <MenuItem Icon="{materialDesign:PackIcon FileDocumentEditOutline}" Header="编辑档案…" Click="ButtonSettings_OnClick" Visibility="{Binding ViewModel.Settings.IsWelcomeWindowShowed, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-            <MenuItem Icon="{materialDesign:PackIcon SettingsOutline}" Header="应用设置…" Click="MenuItemSettings_OnClick" Visibility="{Binding ViewModel.Settings.IsWelcomeWindowShowed, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-            <MenuItem Icon="{materialDesign:PackIcon FileChartOutline}" Header="加载临时课表…" Click="MenuItemTemporaryClassPlan_OnClick" Visibility="{Binding ViewModel.Settings.IsWelcomeWindowShowed, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-            <MenuItem Icon="{materialDesign:PackIcon SwapHorizontal}" Header="换课…" Click="MenuItemClassSwap_OnClick" Visibility="{Binding ViewModel.Settings.IsWelcomeWindowShowed, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-            <Separator Visibility="{Binding ViewModel.Settings.IsWelcomeWindowShowed, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+            <MenuItem Icon="{materialDesign:PackIcon HelpCircleOutline}" Header="帮助…" Click="MenuItemHelps_OnClick" 
+                      Visibility="{Binding ViewModel.Settings.IsWelcomeWindowShowed, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+            <Separator/>
+            <MenuItem Icon="{materialDesign:PackIcon EyeOutLine}" Header="显示主界面" Click="MenuItemSwitchMainWindowVisibility_OnClick">
+                <MenuItem.Visibility>
+                    <MultiBinding Converter="{StaticResource BooleanAndToVisibilityMultiConverter}" Mode="OneWay">
+                        <Binding Path="ViewModel.IsMainWindowVisible" Mode="OneWay"
+                                 Converter="{StaticResource InvertBooleanConverter}" />
+                        <Binding Path="ViewModel.Settings.IsWelcomeWindowShowed" Mode="OneWay"/>
+                    </MultiBinding>
+                </MenuItem.Visibility>
+            </MenuItem>
+            <MenuItem Icon="{materialDesign:PackIcon EyeOffOutline}" Header="隐藏主界面" Click="MenuItemSwitchMainWindowVisibility_OnClick">
+                <MenuItem.Visibility>
+                    <MultiBinding Converter="{StaticResource BooleanAndToVisibilityMultiConverter}" Mode="OneWay">
+                        <Binding Path="ViewModel.IsMainWindowVisible" Mode="OneWay"/>
+                        <Binding Path="ViewModel.Settings.IsWelcomeWindowShowed" Mode="OneWay"/>
+                    </MultiBinding>
+                </MenuItem.Visibility>
+            </MenuItem>
+            <MenuItem Icon="{materialDesign:PackIcon NotificationClearAll}" Header="清除全部提醒" Click="MenuItemClearAllNotifications_OnClick">
+                <MenuItem.Visibility>
+                    <MultiBinding Converter="{StaticResource BooleanAndToVisibilityMultiConverter}" Mode="OneWay">
+                        <Binding Path="ViewModel.Settings.IsWelcomeWindowShowed" Mode="OneWay"/>
+                        <Binding Path="ViewModel.IsOverlayOpened" Mode="OneWay"
+                                 Converter="{StaticResource BooleanToVisibilityConverter}" />
+                    </MultiBinding>
+                </MenuItem.Visibility>
+            </MenuItem>
+            <Separator Visibility="{Binding ViewModel.Settings.IsWelcomeWindowShowed, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+            <MenuItem Icon="{materialDesign:PackIcon FileDocumentEditOutline}" Header="编辑档案…" Click="ButtonSettings_OnClick" Visibility="{Binding ViewModel.Settings.IsWelcomeWindowShowed, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+            <MenuItem Icon="{materialDesign:PackIcon SettingsOutline}" Header="应用设置…" Click="MenuItemSettings_OnClick" Visibility="{Binding ViewModel.Settings.IsWelcomeWindowShowed, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+            <MenuItem Icon="{materialDesign:PackIcon FileChartOutline}" Header="加载临时课表…" Click="MenuItemTemporaryClassPlan_OnClick" Visibility="{Binding ViewModel.Settings.IsWelcomeWindowShowed, Converter={StaticResource BooleanToVisibilityConverter}}">
+            </MenuItem>
+            <MenuItem Icon="{materialDesign:PackIcon SwapHorizontal}" Header="换课…" Click="MenuItemClassSwap_OnClick">
+                <MenuItem.Style>
+                    <Style TargetType="MenuItem" BasedOn="{StaticResource MaterialDesignMenuItem}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding LessonsService.CurrentClassPlan}" Value="{x:Null}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                        <Setter Property="Visibility" Value="{Binding ViewModel.Settings.IsWelcomeWindowShowed, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    </Style>
+                </MenuItem.Style>
+            </MenuItem>
+            <Separator Visibility="{Binding ViewModel.Settings.IsWelcomeWindowShowed, Converter={StaticResource BooleanToVisibilityConverter}}"/>
             <MenuItem Icon="{materialDesign:PackIcon ExitToApp}"  Header="退出" Click="MenuItemExitApp_OnClick"/>
             <Separator Visibility="{Binding ViewModel.Settings.IsDebugEnabled, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"/>
             <MenuItem Icon="{materialDesign:PackIcon BugOutline}" Header="调试"
@@ -120,94 +158,11 @@
                 <Separator/>
                 <MenuItem Header="WelcomeWindow" Click="MenuItemDebugWelcomeWindow_OnClick"/>
                 <MenuItem Header="WelcomeWindow (Full)" Click="MenuItemDebugWelcomeWindow2_OnClick"/>
+                <MenuItem Header="ClassIsland 移动向导" Click="MenuItemDebugMoveClassIslandDirectory_OnClick"/>
                 <Separator/>
                 <MenuItem Header="FitSize" Click="MenuItemDebugFitSize_OnClick"/>
             </MenuItem>
         </ContextMenu>
-
-        <!-- 准备上课 遮罩 -->
-        <StackPanel Orientation="Horizontal" x:Key="ClassPrepareNotifyMask" 
-                    VerticalAlignment="Center" HorizontalAlignment="Center">
-            <materialDesign:PackIcon Kind="AlertCircleOutline" VerticalAlignment="Center"
-                                     Height="20" Width="20"/>
-            <TextBlock Text="即将上课" FontSize="18" Margin="8 0"/>
-            <materialDesign:PackIcon Kind="Class" VerticalAlignment="Center"
-                                     Height="20" Width="20"/>
-        </StackPanel>
-        <converters:TimeSpanToTotalSecondsConverter x:Key="TimeSpanToTotalSecondsConverter" />
-
-        <!-- 准备上课 -->
-        <Grid x:Key="ClassPrepareNotifyOverlay">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition/>
-                <ColumnDefinition/>
-            </Grid.ColumnDefinitions>
-
-            <!-- 倒计时 -->
-            <TextBlock Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="16">
-                <Run Text="距上课还剩"/>
-                <Run Text="{Binding ViewModel.OnClassLeftTime, Converter={StaticResource TimeSpanToTotalSecondsConverter}, Mode=OneWay}" FontWeight="Bold"/>
-                <Run Text="秒"/>
-            </TextBlock>
-
-            <!-- 科目信息 -->
-            <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Orientation="Horizontal"
-                        TextElement.FontSize="16">
-                <TextBlock VerticalAlignment="Center" Text="下节课是："/>
-                <TextBlock Text="{Binding ViewModel.NextSubject.Name}" FontWeight="Bold" FontSize="20" VerticalAlignment="Center"/>
-                <TextBlock Margin="6 0 0 0" FontSize="14" VerticalAlignment="Bottom">
-                    <Run Text="{Binding ViewModel.NextTimeLayoutItem.StartSecond, ConverterCulture=zh-cn, StringFormat={}{0:HH:mm}}">
-                    </Run><Run Text="-">
-                    </Run><Run Text="{Binding ViewModel.NextTimeLayoutItem.EndSecond, ConverterCulture=zh-cn, StringFormat={}{0:HH:mm}}"/>
-                </TextBlock>
-            </StackPanel>
-        </Grid>
-
-        <!-- 上课遮罩 -->
-        <StackPanel Orientation="Horizontal" x:Key="ClassOnNotification" 
-                    VerticalAlignment="Center" HorizontalAlignment="Center">
-            <materialDesign:PackIcon Kind="AlertCircleOutline" VerticalAlignment="Center"
-                                     Height="20" Width="20"/>
-            <TextBlock Text="上课" FontSize="18" Margin="8 0" FontWeight="Bold"/>
-            <materialDesign:PackIcon Kind="Class" VerticalAlignment="Center"
-                                     Height="20" Width="20"/>
-        </StackPanel>
-
-        <!-- 下课遮罩 -->
-        <StackPanel Orientation="Horizontal" x:Key="ClassOffNotification" 
-                    VerticalAlignment="Center" HorizontalAlignment="Center">
-            <materialDesign:PackIcon Kind="AlertCircleOutline" VerticalAlignment="Center"
-                                     Height="20" Width="20"/>
-            <TextBlock Text="课间休息" FontSize="18" Margin="8 0" FontWeight="Bold"/>
-            <materialDesign:PackIcon Kind="Clock" VerticalAlignment="Center"
-                                     Height="20" Width="20"/>
-        </StackPanel>
-
-        <!-- 下课提醒 -->
-        <Grid x:Key="ClassOffOverlay">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition/>
-                <ColumnDefinition/>
-            </Grid.ColumnDefinitions>
-
-            <!-- 课间时间 -->
-            <TextBlock Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="16">
-                <Run Text="本节课间休息长"/>
-                <Run Text="{Binding ViewModel.CurrentTimeLayoutItem.Last, ConverterCulture=zh-cn, Mode=OneWay}" FontWeight="Bold"/>
-            </TextBlock>
-
-            <!-- 科目信息 -->
-            <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Orientation="Horizontal"
-                        TextElement.FontSize="16">
-                <TextBlock VerticalAlignment="Center" Text="下节课是："/>
-                <TextBlock Text="{Binding ViewModel.NextSubject.Name}" FontWeight="Bold" FontSize="20" VerticalAlignment="Center"/>
-                <TextBlock Margin="6 0 0 0" FontSize="14" VerticalAlignment="Bottom">
-                    <Run Text="{Binding ViewModel.NextTimeLayoutItem.StartSecond, ConverterCulture=zh-cn, StringFormat={}{0:HH:mm}}">
-                    </Run><Run Text="-">
-                    </Run><Run Text="{Binding ViewModel.NextTimeLayoutItem.EndSecond, ConverterCulture=zh-cn, StringFormat={}{0:HH:mm}}"/>
-                </TextBlock>
-            </StackPanel>
-        </Grid>
 
         <!--#region StoryBoards-->
         <Storyboard x:Key="OverlayMaskIn">
@@ -243,10 +198,10 @@
                     </EasingDoubleKeyFrame.EasingFunction>
                 </EasingDoubleKeyFrame>
             </DoubleAnimationUsingKeyFrames>
-            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="BackgroundBorderOverlay" Storyboard.TargetProperty="(UIElement.Opacity)">
+            <!--<DoubleAnimationUsingKeyFrames Storyboard.TargetName="BackgroundBorderOverlay" Storyboard.TargetProperty="(UIElement.Opacity)">
                 <EasingDoubleKeyFrame KeyTime="00:00:00.2000000" Value="0"/>
                 <EasingDoubleKeyFrame KeyTime="00:00:00.3000000" Value="1"/>
-            </DoubleAnimationUsingKeyFrames>
+            </DoubleAnimationUsingKeyFrames>-->
             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="BackgroundBorderOverlayMask" Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[3].(TranslateTransform.Y)">
                 <EasingDoubleKeyFrame KeyTime="00:00:00" Value="-60"/>
                 <EasingDoubleKeyFrame KeyTime="00:00:00.2000000" Value="0">
@@ -257,6 +212,11 @@
             </DoubleAnimationUsingKeyFrames>
         </Storyboard>
         <Storyboard x:Key="OverlayMaskOut">
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="GridContentRoot" Storyboard.TargetProperty="(UIElement.Opacity)">
+                <EasingDoubleKeyFrame KeyTime="00:00:00" Value="1"/>
+                <EasingDoubleKeyFrame KeyTime="00:00:00.1000000" Value="1"/>
+                <EasingDoubleKeyFrame KeyTime="00:00:00.3000000" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="GridOverlay" Storyboard.TargetProperty="(UIElement.Opacity)">
                 <EasingDoubleKeyFrame KeyTime="00:00:00" Value="1"/>
                 <EasingDoubleKeyFrame KeyTime="00:00:00.1000000" Value="1"/>
@@ -266,6 +226,15 @@
                 <EasingDoubleKeyFrame KeyTime="00:00:00" Value="0"/>
                 <EasingDoubleKeyFrame KeyTime="00:00:00.1000000" Value="0"/>
                 <EasingDoubleKeyFrame KeyTime="00:00:00.3000000" Value="60">
+                    <EasingDoubleKeyFrame.EasingFunction>
+                        <CircleEase EasingMode="EaseIn"/>
+                    </EasingDoubleKeyFrame.EasingFunction>
+                </EasingDoubleKeyFrame>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RootDropShadowEffect" Storyboard.TargetProperty="Opacity">
+                <EasingDoubleKeyFrame KeyTime="00:00:00" Value="0.7"/>
+                <!--<EasingDoubleKeyFrame KeyTime="00:00:00.1" Value="0.7"/>-->
+                <EasingDoubleKeyFrame KeyTime="00:00:00.3000000" Value="0">
                     <EasingDoubleKeyFrame.EasingFunction>
                         <CircleEase EasingMode="EaseIn"/>
                     </EasingDoubleKeyFrame.EasingFunction>
@@ -285,6 +254,11 @@
             </DoubleAnimationUsingKeyFrames>
         </Storyboard>
         <Storyboard x:Key="OverlayOut">
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="GridContentRoot" Storyboard.TargetProperty="(UIElement.Opacity)">
+                <EasingDoubleKeyFrame KeyTime="00:00:00" Value="0"/>
+                <!--<EasingDoubleKeyFrame KeyTime="00:00:00.1000000" Value="0"/>-->
+                <EasingDoubleKeyFrame KeyTime="00:00:00.3000000" Value="1"/>
+            </DoubleAnimationUsingKeyFrames>
             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="GridOverlay" Storyboard.TargetProperty="(UIElement.Opacity)">
                 <EasingDoubleKeyFrame KeyTime="00:00:00" Value="1"/>
                 <EasingDoubleKeyFrame KeyTime="00:00:00.1" Value="1"/>
@@ -295,8 +269,9 @@
                 </EasingDoubleKeyFrame>
             </DoubleAnimationUsingKeyFrames>
             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RootDropShadowEffect" Storyboard.TargetProperty="Opacity">
-                <EasingDoubleKeyFrame KeyTime="00:00:00" Value="0.7"/>
-                <EasingDoubleKeyFrame KeyTime="00:00:00.1000000" Value="0">
+                <!--<EasingDoubleKeyFrame KeyTime="00:00:00" Value="0.7"/>-->
+                <!--<EasingDoubleKeyFrame KeyTime="00:00:00.1" Value="0.7"/>-->
+                <EasingDoubleKeyFrame KeyTime="00:00:00.3000000" Value="0">
                     <EasingDoubleKeyFrame.EasingFunction>
                         <CircleEase EasingMode="EaseIn"/>
                     </EasingDoubleKeyFrame.EasingFunction>
@@ -312,6 +287,10 @@
             </DoubleAnimationUsingKeyFrames>
         </Storyboard>
         <Storyboard x:Key="OverlayMaskOutDirect">
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="GridContentRoot" Storyboard.TargetProperty="(UIElement.Opacity)">
+                <EasingDoubleKeyFrame KeyTime="00:00:00" Value="0"/>
+                <EasingDoubleKeyFrame KeyTime="00:00:00.3000000" Value="1"/>
+            </DoubleAnimationUsingKeyFrames>
             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="GridOverlay" Storyboard.TargetProperty="(UIElement.Opacity)">
                 <EasingDoubleKeyFrame KeyTime="00:00:00" Value="1"/>
                 <EasingDoubleKeyFrame KeyTime="00:00:00.1000000" Value="0">
@@ -378,9 +357,9 @@
                 </EasingDoubleKeyFrame>
             </DoubleAnimationUsingKeyFrames>
         </Storyboard>
-        <converters:IntToStringConverter x:Key="IntToStringConverter" />
-        <converters:MiniInfoGuidToMiniInfoProviderElementMultiConverter x:Key="MiniInfoGuidToMiniInfoProviderElementConverter" />
-        <converters:WidthDoubleToRectConverter x:Key="WidthDoubleToRectConverter" />
+        <converters1:IntToStringConverter x:Key="IntToStringConverter" />
+        <converters1:MiniInfoGuidToMiniInfoProviderElementMultiConverter x:Key="MiniInfoGuidToMiniInfoProviderElementConverter" />
+        <converters1:WidthDoubleToRectConverter x:Key="WidthDoubleToRectConverter" />
         <!--#endregion 1-->
     </Window.Resources>
     <Window.Style>
@@ -443,7 +422,7 @@
                         <MultiDataTrigger>
                             <MultiDataTrigger.Conditions>
                                 <Condition Binding="{Binding ViewModel.Settings.HideOnClass, Mode=OneWay}" Value="True" />
-                                <Condition Binding="{Binding ViewModel.CurrentStatus, Mode=OneWay}" Value="OnClass" />
+                                <Condition Binding="{Binding LessonsService.CurrentState, Mode=OneWay}" Value="OnClass" />
                                 <Condition Binding="{Binding ViewModel.IsNotificationWindowExplicitShowed, Mode=OneWay}" Value="False" />
                             </MultiDataTrigger.Conditions>
                             <Setter Property="Visibility" Value="Collapsed" />
@@ -575,102 +554,29 @@
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition />
                         </Grid.ColumnDefinitions>
-                        <ContentPresenter Grid.Column="0"
-                                          Margin="6 0 12 0"
-                                          VerticalAlignment="Center"
-                                          Visibility="{Binding ViewModel.Settings.ShowDate, Converter={StaticResource BooleanToVisibilityConverter}, Mode=OneWay}">
-                            <ContentPresenter.Content>
-                                <MultiBinding
-                                    Converter="{StaticResource MiniInfoGuidToMiniInfoProviderElementConverter}">
-                                    <Binding Path="ViewModel.Settings.SelectedMiniInfoProvider" />
-                                    <Binding Path="MiniInfoProviderHostService.Providers" />
-                                </MultiBinding>
-                            </ContentPresenter.Content>
-                        </ContentPresenter>
-
-                        <!-- 没有课程提示 -->
-                        <TextBlock Grid.Column="1"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   Text="今天没有课程。" FontSize="16"
-                                   Margin="128 0">
-                            <TextBlock.Style>
-                                <Style TargetType="{x:Type TextBlock}">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding ViewModel.CurrentClassPlan}" Value="{x:Null}">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-
-                        <!-- 课表 -->
-                        <ListBox Grid.Column="1"
-                                 VerticalAlignment="Center"
-                                 HorizontalAlignment="Left"
-                                 ItemsSource="{Binding ViewModel.CurrentClassPlan.TimeLayout.Layouts}"
-                                 SelectionChanged="Selector_OnSelectionChanged"
-                                 IsHitTestVisible="False"
-                                 Margin="0 0 0 0"
-                                 x:Name="MainListBox"
-                                 IsTabStop="False">
-                            <ListBox.ItemsPanel>
+                        <ItemsControl Grid.Column="0"
+                                      ItemsSource="{Binding ComponentsService.CurrentComponents}"
+                                      VerticalContentAlignment="Stretch">
+                            <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <StackPanel IsItemsHost="True" Orientation="Horizontal" VerticalAlignment="Top" />
+                                    <StackPanel Orientation="Horizontal"/>
                                 </ItemsPanelTemplate>
-                            </ListBox.ItemsPanel>
-                            <ListBox.ItemContainerStyle>
-                                <Style BasedOn="{StaticResource MaterialDesignListBoxItem}"
-                                       TargetType="{x:Type ListBoxItem}">
-                                    <Setter Property="Padding" Value="0" />
-                                    <Setter Property="IsTabStop" Value="False" />
-                                </Style>
-                            </ListBox.ItemContainerStyle>
-                            <ListBox.ItemTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <controls:LessonControl
-                                        Index="{Binding Converter={StaticResource IndexConverter}, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListBoxItem}}}"
-                                        Subjects="{Binding ViewModel.Profile.Subjects, RelativeSource={RelativeSource AncestorType={x:Type local:MainWindow}, Mode=FindAncestor}}"
-                                        CurrentClassPlan="{Binding ViewModel.CurrentClassPlan, RelativeSource={RelativeSource AncestorType={x:Type local:MainWindow}, Mode=FindAncestor}}"
-                                        IsSelected="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListBoxItem}}}">
-                                        <controls:LessonControl.Style>
-                                            <Style TargetType="{x:Type controls:LessonControl}">
-                                                <Setter Property="Visibility" Value="Visible" />
-                                                <Style.Triggers>
-                                                    <MultiDataTrigger>
-                                                        <MultiDataTrigger.Conditions>
-                                                            <Condition Binding="{Binding TimeType}" Value="1" />
-                                                            <Condition
-                                                                Binding="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListBoxItem}}}"
-                                                                Value="False" />
-                                                        </MultiDataTrigger.Conditions>
-                                                        <Setter Property="Visibility" Value="Collapsed" />
-                                                    </MultiDataTrigger>
-                                                    <MultiDataTrigger>
-                                                        <MultiDataTrigger.Conditions>
-                                                            <Condition Binding="{Binding TimeType}" Value="0" />
-                                                            <Condition Binding="{Binding IsHideDefault}" Value="True" />
-                                                            <Condition
-                                                                Binding="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListBoxItem}}}"
-                                                                Value="False" />
-                                                        </MultiDataTrigger.Conditions>
-                                                        <Setter Property="Visibility" Value="Collapsed" />
-                                                    </MultiDataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </controls:LessonControl.Style>
-                                    </controls:LessonControl>
+                                    <Grid>
+                                        <controls:ComponentPresenter Settings="{Binding}"
+                                                                     Margin="6 0"/>
+                                    </Grid>
                                 </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        
                     </Grid>
 
                     <!-- Overlay View -->
                     <Grid x:Name="GridOverlay"
-                          SnapsToDevicePixels="True"
-                          Background="{DynamicResource MaterialDesignPaper}"
-                          Opacity="0">
+                          SnapsToDevicePixels="True">
                         <ProgressBar VerticalAlignment="Stretch"
                                      Maximum="1"
                                      x:Name="OverlayTimeProgressBar"

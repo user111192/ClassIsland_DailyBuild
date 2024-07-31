@@ -1,31 +1,23 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Animation;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using System.Windows.Threading;
+
 using ClassIsland.Controls;
-using ClassIsland.Models;
+using ClassIsland.Core.Abstractions.Services.Management;
+using ClassIsland.Core.Controls;
+using ClassIsland.Helpers;
 using ClassIsland.Services;
 using ClassIsland.Services.Management;
 using ClassIsland.ViewModels;
+
 using MaterialDesignThemes.Wpf;
+
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
+
 using WindowsShortcutFactory;
+
 using Path = System.IO.Path;
 
 namespace ClassIsland.Views;
@@ -42,7 +34,7 @@ public partial class WelcomeWindow : MyWindow
 
     public SettingsService SettingsService { get; } = App.GetService<SettingsService>();
 
-    public ManagementService ManagementService { get; } = App.GetService<ManagementService>();
+    public IManagementService ManagementService { get; } = App.GetService<IManagementService>();
 
     public WelcomeWindow()
     {
@@ -60,7 +52,7 @@ public partial class WelcomeWindow : MyWindow
         ViewModel.MasterTabIndex = 1;
     }
 
-    private void ButtonClose_OnClick(object sender, RoutedEventArgs e)
+    private async void ButtonClose_OnClick(object sender, RoutedEventArgs e)
     {
         ViewModel.IsExitConfirmed = true;
         DialogResult = true;
@@ -78,6 +70,10 @@ public partial class WelcomeWindow : MyWindow
                 shortcut.Save(startMenuPath);
             if (ViewModel.CreateDesktopShortcut)
                 shortcut.Save(desktopPath);
+            if (ViewModel.RegisterUrlScheme)
+                UriProtocolRegisterHelper.Register();
+            if (ViewModel is { CreateClassSwapShortcut: true, RegisterUrlScheme: true })
+                await ShortcutHelpers.CreateClassSwapShortcutAsync();
         }
         catch (Exception ex)
         {
@@ -142,5 +138,15 @@ public partial class WelcomeWindow : MyWindow
     private async void FrameworkElement_OnLoaded(object sender, RoutedEventArgs e)
     {
         
+    }
+
+    private void ButtonPrivacy_OnClick(object sender, RoutedEventArgs e)
+    {
+        new DocumentReaderWindow()
+        {
+            Source = new Uri("/Assets/Documents/Privacy.md", UriKind.RelativeOrAbsolute),
+            Owner = this,
+            Title = "ClassIsland 隐私政策"
+        }.ShowDialog();
     }
 }

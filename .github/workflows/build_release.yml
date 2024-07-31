@@ -36,11 +36,12 @@
 # For a complete CI/CD sample to get started with GitHub Action workflows for Desktop Applications,
 # refer to https://github.com/microsoft/github-actions-for-desktop-apps
 
-name: .NET Core Desktop
+name: Publish release
 
-on: 
-  create:
-  workflow_dispatch:
+on:
+  push:
+    tags:
+      - '*'
 
 jobs:
 
@@ -73,7 +74,7 @@ jobs:
       - name: Install .NET Core
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 6.0.x
+          dotnet-version: 8.0.x
       
       # Add  MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
       - name: Setup MSBuild.exe
@@ -81,30 +82,27 @@ jobs:
       
       - name: Publish application
         run: |
-          cd ./ClassIsland
           ls
-          dotnet publish ./ClassIsland.csproj -p:PublishProfile=FolderProfile -c Release
+          pwsh -ep Bypass -c ./tools/publish.ps1
           
-      - name: Package application
+      - name: Generate MD5
         run: |
-          cd .\ClassIsland\bin\Release\net6.0-windows\publish\win-x64\
-          7z a ClassIsland.zip ./ClassIsland.exe -mx=9
+          pwsh -ep Bypass -c .\tools\generate-md5.ps1 ./out
+          
+      - name: Upload to release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: ./out/*.zip,./out/*.md5sum,./out/*.nupkg
+          draft: true
+          bodyFile: ./out/checksums.md
+          token: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Upload to AppCenter
-        uses: akiojin/appcenter-distribute-github-action@v1.4.8
-        with:
-          # API token (App API token or User API token)
-          token: ${{secrets.APPCENTER_TOKEN}}
-          # Build number
-          build-number: $env:app_ver
-          # ipa or apk file path
-          path: .\ClassIsland\bin\Release\net6.0-windows\publish\win-x64\ClassIsland.zip
-          # Specify app in the <ownerName>/<appName> format
-          app: HelloWRC/ClassIsland
-          group: Collaborators
+        env:
+          APPCENTER_TOKEN: ${{ secrets.APPCENTER_TOKEN }}
+        run: |
+          $env:app_ver = (git describe --abbrev=0 --tags)
+          Write-Host "Uploading to AppCenter..." -ForegroundColor Cyan
+          pwsh -ep Bypass -c .\tools\pre-appcenter-upload.ps1
+          pwsh -ep Bypass -c .\tools\appcenter-upload.ps1 $env:APPCENTER_TOKEN $env:app_ver
           
-      - name: Update to release
-        uses: ncipollo/release-action@v1.10.0
-        with:
-          artifacts: .\ClassIsland\bin\Release\net6.0-windows\publish\win-x64\ClassIsland.zip
-          draft: true

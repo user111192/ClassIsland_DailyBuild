@@ -2,8 +2,8 @@
 using System.Globalization;
 using System.Linq;
 using System.Windows.Data;
+using ClassIsland.Core.Abstractions.Services;
 using ClassIsland.Services;
-using ClassIsland.Services.NotificationProviders;
 
 namespace ClassIsland.Converters;
 
@@ -16,7 +16,7 @@ public class GuidToNotificationProviderConverter : IValueConverter
             return null;
         }
         var id = (string)value;
-        var l = (from i in App.GetService<NotificationHostService>().NotificationProviders
+        var l = (from i in App.GetService<INotificationHostService>().NotificationProviders
             where i.ProviderGuid.ToString() == id
             select i)
             .ToList();

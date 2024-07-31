@@ -1,6 +1,7 @@
-﻿using ClassIsland.Core.Abstraction.Models;
-using ClassIsland.Core.Enums;
-using ClassIsland.Core.Interfaces;
+﻿using ClassIsland.Shared.Abstraction.Models;
+using ClassIsland.Shared.Enums;
+using ClassIsland.Shared.Interfaces;
+
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace ClassIsland.Models.AttachedSettings;

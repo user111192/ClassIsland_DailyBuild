@@ -1,22 +1,24 @@
-﻿$PUBLISH_TARGET = ".\ClassIsland"
+﻿$PUBLISH_TARGET = "..\out\ClassIsland"
 
-$env:git_latest_tag = git describe --abbrev=0 --tags
-$env:git_commit_short = $(git rev-parse HEAD).substring(0, 7)
-$env:git_current_branch = git branch --show-curren
-echo "Git commit: ${env:git_commit_short} ${env:git_latest_tag} ${$env:git_current_branch}"
-echo "APPVEYOR_REPO_TAG = ${env:APPVEYOR_REPO_TAG}"
+if ($(Test-Path ./out) -eq $false) {
+    mkdir out
+} else {
+    rm out/* -Recurse -Force
+}
 
+#dotnet clean
+
+dotnet build -c Release -p:Platform="Any CPU"
+cp ./**/bin/Release/*.nupkg ./out
+    
 dotnet publish .\ClassIsland\ClassIsland.csproj -c Release -p:PublishProfile=FolderProfile -p:PublishDir=$PUBLISH_TARGET -property:DebugType=embedded
 
-echo "Successfully published to $PUBLISH_TARGET"
+Write-Host "Successfully published to $PUBLISH_TARGET" -ForegroundColor Green
 
-echo "Packaging..."
-7z a ./ClassIsland/ClassIsland/ClassIsland.zip ./ClassIsland/ClassIsland/* -r -mx=9
+Write-Host "Packaging..." -ForegroundColor Cyan
 
-if ($env:APPVEYOR_REPO_TAG -eq $true) {
-    echo "Uploading to AppCenter..."
-    pwsh -ep Bypass -c .\tools\pre-appcenter-upload.ps1
-    pwsh -ep Bypass -c .\tools\appcenter-upload.ps1 $env:appcenter_token ${env:git_latest_tag}
-} else {
-    echo "Skiped uploading to AppCenter."
-}
+rm ./out/ClassIsland/*.xml
+
+7z a ./out/ClassIsland.zip ./out/ClassIsland/* -r -mx=9
+
+rm -Recurse -Force ./out/ClassIsland

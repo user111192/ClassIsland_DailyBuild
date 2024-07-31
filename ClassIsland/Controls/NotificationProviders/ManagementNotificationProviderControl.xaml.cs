@@ -2,7 +2,8 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Animation;
-using ClassIsland.Core.Protobuf.Command;
+
+using ClassIsland.Shared.Protobuf.Command;
 
 namespace ClassIsland.Controls.NotificationProviders;
 

@@ -1,13 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
+using System.Windows.Threading;
+using ClassIsland.Controls.Components;
 using ClassIsland.Controls.MiniInfoProvider;
-using ClassIsland.Core.Interfaces;
+using ClassIsland.Shared.Interfaces;
 using ClassIsland.Models;
+
+using Google.Protobuf.WellKnownTypes;
 
 using Microsoft.Extensions.Hosting;
 
@@ -27,6 +27,7 @@ public class CountDownMiniInfoProvider : IMiniInfoProvider, IHostedService
 
     private CountDownMiniInfoProviderSettings CountDownMiniInfoProviderSettings { get; set; }
 
+
     public CountDownMiniInfoProvider(SettingsService settingsService, MiniInfoProviderHostService miniInfoProviderHostService)
     {
         SettingsService = settingsService;
@@ -34,18 +35,14 @@ public class CountDownMiniInfoProvider : IMiniInfoProvider, IHostedService
         CountDownMiniInfoProviderSettings =
             miniInfoProviderHostService.GetMiniInfoProviderSettings<CountDownMiniInfoProviderSettings>(ProviderGuid)
             ?? new();
-        InfoElement = new CountDownMiniInfoProviderControl(CountDownMiniInfoProviderSettings);
-        SettingsElement = new CountDownMiniInfoProviderSettingsControl(CountDownMiniInfoProviderSettings);
-        miniInfoProviderHostService.WriteMiniInfoProviderSettings(ProviderGuid, CountDownMiniInfoProviderSettings);
+        CountDownMiniInfoProviderSettings.DaysLeft = (CountDownMiniInfoProviderSettings.overTime - DateTime.Today).Days;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        
     }
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        
     }
 }

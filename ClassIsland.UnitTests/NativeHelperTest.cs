@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ClassIsland.Core;
+using ClassIsland.Core.Helpers.Native;
 
 namespace ClassIsland.UnitTests;
 
