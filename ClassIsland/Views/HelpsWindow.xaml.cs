@@ -12,13 +12,12 @@ using System.Windows.Media;
 using System.Windows.Threading;
 
 using ClassIsland.Controls;
+using ClassIsland.Core;
 using ClassIsland.Core.Abstractions.Services;
 using ClassIsland.Core.Controls;
 using ClassIsland.ViewModels;
 
 using MdXaml;
-
-using Microsoft.AppCenter.Analytics;
 using Microsoft.Extensions.Logging;
 using Sentry;
 
@@ -73,7 +72,10 @@ public partial class HelpsWindow : MyWindow
     {
         ViewModel.Document = new FlowDocument();
         ViewModel.HelpDocuments.Clear();
-
+        if (AppBase.Current.IsAssetsTrimmed())
+        {
+            return;
+        }
         //ViewModel.HelpDocuments.Add("测试", "/Assets/Documents/HelloWorld.md");
         ViewModel.HelpDocuments.Add("欢迎", "/Assets/Documents/Welcome.md");
         ViewModel.HelpDocuments.Add("基本", "/Assets/Documents/Basic.md");

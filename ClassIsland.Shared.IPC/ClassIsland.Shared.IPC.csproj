@@ -4,6 +4,8 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PackageTags>classisland;ipc;grpc;addin;plugin</PackageTags>
+    <Description>用于的客户端与 ClassIsland 应用进行跨进程通信库。</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,5 +30,6 @@
     <Protobuf Include="Protobuf\Management\*.proto" />
   </ItemGroup>
 
-  <Import Project="..\GeneratePackage.props"/>
+  <Import Project="..\GeneratePackage.props" />
+  <Import Project="..\Global.props" />
 </Project>

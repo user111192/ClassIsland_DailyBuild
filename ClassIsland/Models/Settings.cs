@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Text.Json.Serialization;
 using System.Windows;
 using System.Windows.Media;
+using ClassIsland.Core.Models.Plugin;
 using ClassIsland.Core.Models.Weather;
 using ClassIsland.Helpers;
 using ClassIsland.Shared;
@@ -17,8 +19,6 @@ using ClassIsland.Services.AppUpdating;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 using Microsoft.Extensions.Logging;
-
-using Newtonsoft.Json;
 
 using Octokit;
 
@@ -84,7 +84,7 @@ public class Settings : ObservableRecipient, ILessonControlSettings, INotificati
     private bool _isWallpaperAutoUpdateEnabled = false;
     private int _wallpaperAutoUpdateIntervalSeconds = 60;
     private bool _isFallbackModeEnabled = true;
-    private string _mainWindowFont = "/ClassIsland;component/Assets/Fonts/#HarmonyOS Sans SC";
+    private string _mainWindowFont = App.IsAssetsTrimmedInternal ? "Microsoft YaHei UI" : "/ClassIsland;component/Assets/Fonts/#HarmonyOS Sans SC";
     private ObservableDictionary<string, object?> _miniInfoProviderSettings = new();
     private string? _selectedMiniInfoProvider = "d9fc55d6-8061-4c21-b521-6b0532ff735f";
     private WeatherInfo _lastWeatherInfo = new();
@@ -153,6 +153,21 @@ public class Settings : ObservableRecipient, ILessonControlSettings, INotificati
     private bool _showComponentsMigrateTip = false;
     private bool _expAllowEditingActivatedTimeLayout = false;
     private string _directoryIsDesktopShowed = "";
+    private ObservableDictionary<string, string> _pluginIndexSelectedMirrors = new();
+    private ObservableCollection<string> _userPluginIndexes = new();
+    private ObservableDictionary<string, string> _additionalPluginIndexes = new();
+    private ObservableCollection<PluginIndexInfo> _pluginIndexes = new();
+    private string _officialSelectedMirror = "github";
+    private ObservableDictionary<string, string> _officialIndexMirrors = new()
+    {
+        { "github", "https://github.com" },
+        { "ghproxy", "https://mirror.ghproxy.com/https://github.com" },
+        { "moeyy", "https://github.moeyy.xyz/https://github.com" }
+    };
+
+    private bool _isMigratedFromv14 = false;
+    private DateTime _lastRefreshPluginSourceTime = DateTime.MinValue;
+    private bool _isProfileEditorClassInfoSubjectAutoMoveNextEnabled = true;
 
     public void NotifyPropertyChanged(string propertyName)
     {
@@ -326,6 +341,7 @@ public class Settings : ObservableRecipient, ILessonControlSettings, INotificati
         }
     }
 
+    [JsonIgnore]
     public bool IsAutoStartEnabled
     {
         get => File.Exists(
@@ -368,6 +384,26 @@ public class Settings : ObservableRecipient, ILessonControlSettings, INotificati
         }
     }
 
+    [JsonIgnore]
+    public bool IsSentryEnabled
+    {
+        get => Environment.GetEnvironmentVariable("ClassIsland_IsSentryEnabled") is "1" or null;
+        set
+        {
+            try
+            {
+                Environment.SetEnvironmentVariable("ClassIsland_IsSentryEnabled", value ? "1" : "0");
+                OnPropertyChanged();
+            }
+            catch (Exception ex)
+            {
+                IAppHost.GetService<ILogger<Settings>>().LogError(ex, "无法设置 Sentry 启用状态。");
+            }
+
+        }
+    }
+
+    [JsonIgnore]
     public bool IsUrlProtocolRegistered
     {
         get => UriProtocolRegisterHelper.IsRegistered();
@@ -1470,6 +1506,54 @@ public class Settings : ObservableRecipient, ILessonControlSettings, INotificati
         : (DiagnosticLastMemoryKillTime - DiagnosticFirstLaunchTime).TotalSeconds / 86400.0 * 1.0 / DiagnosticMemoryKillCount;
 
     #endregion
+
+    #region Plugins
+
+    public ObservableDictionary<string, string> OfficialIndexMirrors
+    {
+        get => _officialIndexMirrors;
+        set
+        {
+            if (Equals(value, _officialIndexMirrors)) return;
+            _officialIndexMirrors = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string OfficialSelectedMirror
+    {
+        get => _officialSelectedMirror;
+        set
+        {
+            if (value == _officialSelectedMirror) return;
+            _officialSelectedMirror = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public ObservableCollection<PluginIndexInfo> PluginIndexes
+    {
+        get => _pluginIndexes;
+        set
+        {
+            if (Equals(value, _pluginIndexes)) return;
+            _pluginIndexes = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public DateTime LastRefreshPluginSourceTime
+    {
+        get => _lastRefreshPluginSourceTime;
+        set
+        {
+            if (value.Equals(_lastRefreshPluginSourceTime)) return;
+            _lastRefreshPluginSourceTime = value;
+            OnPropertyChanged();
+        }
+    }
+
+    #endregion
     public bool IsDebugEnabled
     {
         get => _isDebugEnabled;
@@ -1576,6 +1660,28 @@ public class Settings : ObservableRecipient, ILessonControlSettings, INotificati
         {
             if (value == _showComponentsMigrateTip) return;
             _showComponentsMigrateTip = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool IsMigratedFromv1_4
+    {
+        get => _isMigratedFromv14;
+        set
+        {
+            if (value == _isMigratedFromv14) return;
+            _isMigratedFromv14 = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool IsProfileEditorClassInfoSubjectAutoMoveNextEnabled
+    {
+        get => _isProfileEditorClassInfoSubjectAutoMoveNextEnabled;
+        set
+        {
+            if (value == _isProfileEditorClassInfoSubjectAutoMoveNextEnabled) return;
+            _isProfileEditorClassInfoSubjectAutoMoveNextEnabled = value;
             OnPropertyChanged();
         }
     }

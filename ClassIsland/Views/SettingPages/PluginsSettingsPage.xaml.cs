@@ -20,6 +20,7 @@ using ClassIsland.Core.Abstractions.Services;
 using ClassIsland.Core.Attributes;
 using ClassIsland.Core.Enums.SettingsWindow;
 using ClassIsland.Core.Helpers;
+using ClassIsland.Core.Models.Plugin;
 using ClassIsland.Services;
 using ClassIsland.ViewModels.SettingsPages;
 using MaterialDesignThemes.Wpf;
@@ -42,15 +43,21 @@ public partial class PluginsSettingsPage : SettingsPageBase
 
     public IPluginService PluginService { get; }
     public IPluginMarketService PluginMarketService { get; }
+    public SettingsService SettingsService { get; }
 
-    public PluginsSettingsPage(IPluginService pluginService, IPluginMarketService pluginMarketService)
+    public PluginsSettingsPage(IPluginService pluginService, IPluginMarketService pluginMarketService, SettingsService settingsService)
     {
         InitializeComponent();
         DataContext = this;
         PluginService = pluginService;
         PluginMarketService = pluginMarketService;
+        SettingsService = settingsService;
         ViewModel.PropertyChanged += ViewModelOnPropertyChanged;
         PluginMarketService.RestartRequested += (sender, args) => RequestRestart();
+        if (DateTime.Now - SettingsService.Settings.LastRefreshPluginSourceTime >= TimeSpan.FromDays(7))
+        {
+            _ = PluginMarketService.RefreshPluginSourceAsync();
+        }
     }
 
     private async Task UpdateReadmeDocument()
@@ -156,6 +163,7 @@ public partial class PluginsSettingsPage : SettingsPageBase
 
     private void ButtonInstallFromLocal_OnClick(object sender, RoutedEventArgs e)
     {
+        ViewModel.IsPluginMarketOperationsPopupOpened = false;
         var dialog = new OpenFileDialog()
         {
             Title = "从本地安装插件",
@@ -193,6 +201,10 @@ public partial class PluginsSettingsPage : SettingsPageBase
     private async void ButtonBaseRefreshPlugins_OnClick(object sender, RoutedEventArgs e)
     {
         await PluginMarketService.RefreshPluginSourceAsync();
+        if (FindResource("PluginSource") is CollectionViewSource source)
+        {
+            source.View.Refresh();
+        }
     }
 
     private void ButtonInstallPlugin_OnClick(object sender, RoutedEventArgs e)
@@ -200,5 +212,92 @@ public partial class PluginsSettingsPage : SettingsPageBase
         if (ViewModel.SelectedPluginInfo == null)
             return;
         PluginMarketService.RequestDownloadPlugin(ViewModel.SelectedPluginInfo.Manifest.Id);
+    }
+
+    private void MenuItemReloadFromCache_OnClick(object sender, RoutedEventArgs e)
+    {
+        ViewModel.IsPluginMarketOperationsPopupOpened = false;
+        PluginMarketService.LoadPluginSource();
+    }
+
+    private void MenuItemManagePluginSources_OnClick(object sender, RoutedEventArgs e)
+    {
+        ViewModel.IsPluginMarketOperationsPopupOpened = false;
+        OpenDrawer("PluginSourceManageDrawer");
+    }
+
+    private void MenuItemOpenPluginsFolder_OnClick(object sender, RoutedEventArgs e)
+    {
+        ViewModel.IsPluginMarketOperationsPopupOpened = false;
+        Process.Start(new ProcessStartInfo()
+        {
+            FileName = Services.PluginService.PluginsRootPath,
+            UseShellExecute = true
+        });
+    }
+
+    private void ButtonBase2_OnClick(object sender, RoutedEventArgs e)
+    {
+        ViewModel.IsPluginMarketOperationsPopupOpened = false;
+    }
+
+    private void ButtonAddPluginSource_OnClick(object sender, RoutedEventArgs e)
+    {
+        SettingsService.Settings.PluginIndexes.Add(new PluginIndexInfo());
+    }
+
+    private void ButtonRemovePluginSource_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.SelectedPluginIndexInfo == null)
+            return;
+        SettingsService.Settings.PluginIndexes.Remove(ViewModel.SelectedPluginIndexInfo);
+    }
+
+    private void ListBoxCategory_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (FindResource("PluginSource") is CollectionViewSource source)
+        {
+            source.View.Refresh();
+        }
+    }
+
+    private void PluginSource_OnFilter(object sender, FilterEventArgs e)
+    {
+        if (e.Item is not KeyValuePair<string, PluginInfo> kvp) 
+            return;
+        var info = kvp.Value;
+        if (!info.IsLocal && ViewModel.PluginCategoryIndex == 1)
+        {
+            e.Accepted = false;
+            return;
+        }
+        if (!info.IsAvailableOnMarket && ViewModel.PluginCategoryIndex == 0)
+        {
+            e.Accepted = false;
+            return;
+        }
+        
+        var filter = ViewModel.PluginFilterText;
+        if (string.IsNullOrWhiteSpace(filter))
+            return;
+        e.Accepted = info.Manifest.Id.Contains(filter) ||
+                     info.Manifest.Name.Contains(filter) ||
+                     info.Manifest.Description.Contains(filter);
+    }
+
+    private void TextBoxFilter_OnKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter) return;
+        Focus();
+        if (FindResource("PluginSource") is CollectionViewSource source)
+        {
+            source.View.Refresh();
+        }
+
+    }
+
+    private void ButtonRestart_OnClick(object sender, RoutedEventArgs e)
+    {
+        RequestRestart();
     }
 }

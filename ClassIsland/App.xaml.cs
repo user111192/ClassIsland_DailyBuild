@@ -40,9 +40,6 @@ using ClassIsland.Views;
 using ClassIsland.Views.SettingPages;
 using MaterialDesignThemes.Wpf;
 
-using Microsoft.AppCenter;
-using Microsoft.AppCenter.Analytics;
-using Microsoft.AppCenter.Crashes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -68,6 +65,13 @@ namespace ClassIsland;
 /// </summary>
 public partial class App : AppBase, IAppHost
 {
+    public static bool IsAssetsTrimmedInternal { get; } =
+#if TrimAssets 
+        true;
+#else
+        false;
+#endif
+    
     private CrashWindow? CrashWindow;
     public Mutex? Mutex { get; set; }
     public bool IsMutexCreateNew { get; set; } = false;
@@ -155,10 +159,11 @@ public partial class App : AppBase, IAppHost
         System.Windows.Forms.Application.EnableVisualStyles();
         DiagnosticService.BeginStartup();
         ConsoleService.InitializeConsole();
+        if (IsAssetsTrimmed())
+        {
+            Resources["HarmonyOsSans"] = FindResource("BackendFontFamily");
+        }
 
-#if DEBUG
-        AppCenter.LogLevel = Microsoft.AppCenter.LogLevel.Verbose;
-#endif
         BindingDiagnostics.BindingFailed += BindingDiagnosticsOnBindingFailed;
 
         // 检测Mutex
@@ -307,6 +312,8 @@ public partial class App : AppBase, IAppHost
                 {
                     MainViewModel = s.GetService<MainWindow>()?.ViewModel ?? new()
                 });
+                services.AddTransient<ClassPlanDetailsWindow>();
+                services.AddSingleton<IProfileAnalyzeService, ProfileAnalyzeService>();
                 // 设置页面
                 services.AddSettingsPage<GeneralSettingsPage>();
                 services.AddSettingsPage<ComponentsSettingsPage>();
@@ -324,7 +331,7 @@ public partial class App : AppBase, IAppHost
                 // 主界面组件
                 services.AddComponent<TextComponent, TextComponentSettingsControl>();
                 services.AddComponent<LegacyScheduleComponent>();
-                services.AddComponent<ScheduleComponent>();
+                services.AddComponent<ScheduleComponent, ScheduleComponentSettingsControl>();
                 services.AddComponent<DateComponent>();
                 services.AddComponent<ClockComponent, ClockComponentSettingsControl>();
                 services.AddComponent<WeatherComponent, WeatherComponentSettingsControl>();
@@ -357,9 +364,20 @@ public partial class App : AppBase, IAppHost
                 });
                 // Grpc
                 services.AddGrpcService<RemoteUriNavigationService>();
+                // AttachedSettings
+                services.AddAttachedSettingsControl<AfterSchoolNotificationAttachedSettingsControl>();
+                services.AddAttachedSettingsControl<ClassNotificationAttachedSettingsControl>();
+                services.AddAttachedSettingsControl<LessonControlAttachedSettingsControl>();
+                services.AddAttachedSettingsControl<WeatherNotificationAttachedSettingsControl>();
                 // Plugins
                 PluginService.InitializePlugins(context, services);
             }).Build();
+        Logger = GetService<ILogger<App>>();
+        var lifetime = IAppHost.GetService<IHostApplicationLifetime>();
+        lifetime.ApplicationStarted.Register(() => Logger.LogInformation("App started."));
+        lifetime.ApplicationStopping.Register(() => Logger.LogInformation("App stopping."));
+        lifetime.ApplicationStopped.Register(() => Logger.LogInformation("App stopped."));
+        lifetime.ApplicationStopping.Register(Stop);
 #if DEBUG
         MemoryProfiler.GetSnapshot("Host built");
 #endif
@@ -385,7 +403,6 @@ public partial class App : AppBase, IAppHost
         }
         spanLoadingSettings.Finish();
         //OverrideFocusVisualStyle();
-        Logger = GetService<ILogger<App>>();
         Logger.LogInformation("初始化应用。");
 
         if (Settings.IsSplashEnabled && !ApplicationCommand.Quiet)
@@ -440,11 +457,6 @@ public partial class App : AppBase, IAppHost
                 return;
             }
         }
-        var attachedSettingsHostService = GetService<IAttachedSettingsHostService>();
-        attachedSettingsHostService.SubjectSettingsAttachedSettingsControls.Add(typeof(LessonControlAttachedSettingsControl));
-        attachedSettingsHostService.ClassPlanSettingsAttachedSettingsControls.Add(typeof(LessonControlAttachedSettingsControl));
-        attachedSettingsHostService.TimeLayoutSettingsAttachedSettingsControls.Add(typeof(LessonControlAttachedSettingsControl));
-        attachedSettingsHostService.TimePointSettingsAttachedSettingsControls.Add(typeof(LessonControlAttachedSettingsControl));
         GetService<ISplashService>().CurrentProgress = 75;
 
         await GetService<IProfileService>().LoadProfileAsync();
@@ -452,6 +464,7 @@ public partial class App : AppBase, IAppHost
         GetService<IExactTimeService>();
         _ = GetService<WallpaperPickingService>().GetWallpaperAsync();
         _ = IAppHost.Host.StartAsync();
+        IAppHost.GetService<IPluginMarketService>().LoadPluginSource();
 
         var spanLoadMainWindow = spanLaunching.StartChild("span-loading-mainWindow");
         Logger.LogInformation("正在初始化MainWindow。");
@@ -462,6 +475,7 @@ public partial class App : AppBase, IAppHost
         MainWindow = mw;
         mw.StartupCompleted += (o, args) =>
         {
+            AppStarted?.Invoke(this, EventArgs.Empty);
             spanLoadMainWindow.Finish();
             transaction.Finish();
             SentrySdk.ConfigureScope(s => s.Transaction = null);
@@ -613,11 +627,6 @@ public partial class App : AppBase, IAppHost
         }
     }
 
-    private void CrashesOnSendingErrorReport(object sender, SendingErrorReportEventArgs e)
-    {
-
-    }
-
     private void OverrideFocusVisualStyle()
     {
         var overwriteList = new List<string>()
@@ -698,14 +707,29 @@ public partial class App : AppBase, IAppHost
 
     public override void Stop()
     {
-        IAppHost.Host?.Services.GetService<ILessonsService>()?.StopMainTimer();
-        IAppHost.Host?.Services.GetService<NamedPipeServer>()?.Kill();
-        IAppHost.Host?.StopAsync(TimeSpan.FromSeconds(5));
-        IAppHost.Host?.Services.GetService<SettingsService>()?.SaveSettings();
-        IAppHost.Host?.Services.GetService<IProfileService>()?.SaveProfile();
-        ReleaseLock();
-        Current.Shutdown();
+        Dispatcher.Invoke(() =>
+        {
+            AppStopping?.Invoke(this, EventArgs.Empty);
+            IAppHost.Host?.Services.GetService<ILessonsService>()?.StopMainTimer();
+            IAppHost.Host?.Services.GetService<NamedPipeServer>()?.Kill();
+            IAppHost.Host?.StopAsync(TimeSpan.FromSeconds(5));
+            IAppHost.Host?.Services.GetService<SettingsService>()?.SaveSettings();
+            IAppHost.Host?.Services.GetService<IProfileService>()?.SaveProfile();
+            Current.Shutdown();
+            try
+            {
+                //ReleaseLock();
+            }
+            catch (Exception e)
+            {
+                Logger?.LogError(e, "无法释放 Mutex。");
+            }
+        });
     }
+
+    public override bool IsAssetsTrimmed() => IsAssetsTrimmedInternal;
+    public override event EventHandler? AppStarted;
+    public override event EventHandler? AppStopping;
 
     public override void Restart(bool quiet=false)
     {

@@ -23,7 +23,23 @@ public abstract class AppBase : Application, IAppHost
     /// 停止当前应用程序。
     /// </summary>
     public abstract void Stop();
-    
+
+    /// <summary>
+    /// 获取应用是否已裁剪资源。
+    /// </summary>
+    /// <returns></returns>
+    public abstract bool IsAssetsTrimmed();
+
+    /// <summary>
+    /// 当应用启动时触发。
+    /// </summary>
+    public abstract event EventHandler? AppStarted;
+
+    /// <summary>
+    /// 当应用正在停止时触发。
+    /// </summary>
+    public abstract event EventHandler? AppStopping;
+
     internal AppBase()
     {
     }

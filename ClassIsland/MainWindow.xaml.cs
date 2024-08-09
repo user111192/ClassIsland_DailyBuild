@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Documents;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -33,8 +34,6 @@ using ClassIsland.Views;
 using GrpcDotNetNamedPipes;
 using H.NotifyIcon;
 
-using Microsoft.AppCenter;
-using Microsoft.AppCenter.Analytics;
 using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
 
@@ -571,12 +570,6 @@ public partial class MainWindow : Window
 
     private async void UpdateTheme()
     {
-        var aState = await AppCenter.IsEnabledAsync();
-        if (aState != ViewModel.Settings.IsReportingEnabled)
-        {
-            await AppCenter.SetEnabledAsync(ViewModel.Settings.IsReportingEnabled);
-        }
-
         UpdateWindowPos();
         var hWnd = (HWND)new WindowInteropHelper(this).Handle;
         var style = GetWindowLong(hWnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE);
@@ -609,7 +602,8 @@ public partial class MainWindow : Window
                 primary = ViewModel.Settings.PrimaryColor;
                 secondary = ViewModel.Settings.SecondaryColor;
                 break;
-            case 1:
+            case 1: // 壁纸主题色
+            case 3: // 屏幕主题色
                 primary = secondary = ViewModel.Settings.SelectedPlatte;
                 break;
             case 2:
@@ -665,8 +659,8 @@ public partial class MainWindow : Window
 
     private void MenuItemDebugOverlayMaskIn_OnClick(object sender, RoutedEventArgs e)
     {
-        ViewModel.CurrentMaskElement = FindResource("ClassPrepareNotifyMask");
-        ViewModel.CurrentOverlayElement = FindResource("ClassPrepareNotifyOverlay");
+        ViewModel.CurrentMaskElement = new TextBlock(new Run("Mask"));
+        ViewModel.CurrentOverlayElement = new TextBlock(new Run("Overlay"));
         var a = (Storyboard)FindResource("OverlayMaskIn");
         a.Begin();
     }
@@ -832,6 +826,11 @@ public partial class MainWindow : Window
     public void OpenHelpsWindow()
     {
         SentrySdk.Metrics.Increment("views.HelpWindow.open");
+        if (AppBase.Current.IsAssetsTrimmed())
+        {
+            UriNavigationService.Navigate(new Uri("https://docs.classisland.tech/"));
+            return;
+        }
         if (HelpsWindow.ViewModel.IsOpened)
         {
             HelpsWindow.WindowState = HelpsWindow.WindowState == WindowState.Minimized ? WindowState.Normal : HelpsWindow.WindowState;

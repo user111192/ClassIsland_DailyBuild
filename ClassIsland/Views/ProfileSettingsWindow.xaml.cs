@@ -27,7 +27,6 @@ using ClassIsland.ViewModels;
 
 using MaterialDesignThemes.Wpf;
 
-using Microsoft.AppCenter.Analytics;
 using Sentry;
 using Application = System.Windows.Application;
 using DataFormats = System.Windows.DataFormats;
@@ -66,6 +65,7 @@ public partial class ProfileSettingsWindow : MyWindow
     {
         InitializeComponent();
         DataContext = this;
+
     }
 
     public bool IsOpened
@@ -242,7 +242,8 @@ public partial class ProfileSettingsWindow : MyWindow
         //OpenDrawer("TimePointEditor");
         SentrySdk.Metrics.Increment("views.ProfileSettingsWindow.timePoint.create", tags: new Dictionary<string, string>()
         {
-            {"Type", timeType.ToString()}
+            {"Type", timeType.ToString()},
+            {"Auto", "False"}
         });
     }
 
@@ -255,9 +256,10 @@ public partial class ProfileSettingsWindow : MyWindow
             EndSecond   = endTime,
         };
         AddTimePoint(newItem);
-        Analytics.TrackEvent("档案设置 · 自动创建时间点", new Dictionary<string, string>
+        SentrySdk.Metrics.Increment("views.ProfileSettingsWindow.timePoint.create", tags: new Dictionary<string, string>()
         {
-            {"Type", timeType.ToString()}
+            {"Type", timeType.ToString()},
+            {"Auto", "True"}
         });
     }
 
@@ -391,14 +393,20 @@ public partial class ProfileSettingsWindow : MyWindow
 
     private void ButtonAddClassPlan_OnClick(object sender, RoutedEventArgs e)
     {
+        CreateClassPlan();
+    }
+
+    private void CreateClassPlan()
+    {
         SentrySdk.Metrics.Increment("views.ProfileSettingsWindow.classPlan.create");
         var newClassPlan = new ClassPlan()
         {
             AssociatedGroup = ProfileService.Profile.SelectedClassPlanGroupId
         };
         MainViewModel.Profile.ClassPlans.Add(Guid.NewGuid().ToString(), newClassPlan);
-        ListViewClassPlans.SelectedIndex = MainViewModel.Profile.ClassPlans.Count - 1;
-        ViewModel.DrawerContent = FindResource("ClassPlansInfoEditor");
+        ViewModel.SelectedClassPlan = newClassPlan;
+        ViewModel.IsClassPlanEditComplete = false;
+        OpenDrawer("ClassPlansInfoEditor");
     }
 
     private void ButtonDebugAddNewClass_OnClick(object sender, RoutedEventArgs e)
@@ -588,8 +596,8 @@ public partial class ProfileSettingsWindow : MyWindow
     {
         if (e.OriginalSource.GetType() != typeof(TabControl))
             return;
-        var c = (KeyValuePair<string, ClassPlan>?)ListViewClassPlans.SelectedValue;
-        c?.Value.RefreshClassesList();
+        var c = ViewModel.SelectedClassPlan;
+        c?.RefreshClassesList();
     }
 
     private void ButtonProfileManage_OnClick(object sender, RoutedEventArgs e)
@@ -968,5 +976,29 @@ public partial class ProfileSettingsWindow : MyWindow
             }
             Activate();
         }
+    }
+
+    private void EventSetterSubjectSelector_OnClick(object sender, object args)
+    {
+        if (!MainViewModel.Settings.IsProfileEditorClassInfoSubjectAutoMoveNextEnabled)
+            return;
+        if (ViewModel.SelectedClassIndex + 1 >= ViewModel.SelectedClassPlan.Classes.Count)
+        {
+            ViewModel.IsClassPlanEditComplete = true;
+            return;
+        }
+        ViewModel.SelectedClassIndex++;
+        ViewModel.IsClassPlanEditComplete = false;
+        DataGridClassPlans.ScrollIntoView(DataGridClassPlans.SelectedItem);
+    }
+
+    private void ButtonCloseCompleteTip_OnClick(object sender, RoutedEventArgs e)
+    {
+        ViewModel.IsClassPlanEditComplete = false;
+    }
+
+    private void ButtonAddClassPlanFromCompletedTip_OnClick(object sender, RoutedEventArgs e)
+    {
+        CreateClassPlan();
     }
 }
